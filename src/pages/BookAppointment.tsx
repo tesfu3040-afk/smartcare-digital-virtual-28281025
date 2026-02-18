@@ -1,0 +1,145 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Video, MessageSquare, DollarSign, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+
+export default function BookAppointment() {
+  const { doctorId } = useParams<{ doctorId: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [doctor, setDoctor] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [type, setType] = useState("video");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!doctorId) return;
+    const fetchDoctor = async () => {
+      const { data } = await supabase
+        .from("doctors")
+        .select("*, profiles!doctors_user_id_fkey(first_name, last_name)")
+        .eq("user_id", doctorId)
+        .maybeSingle();
+      if (data) {
+        setDoctor(data);
+        setProfile(data.profiles);
+      }
+    };
+    fetchDoctor();
+  }, [doctorId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !doctorId) {
+      toast.error("Please sign in to book");
+      navigate("/auth");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.from("appointments").insert({
+      patient_id: user.id,
+      doctor_id: doctorId,
+      appointment_date: date,
+      appointment_time: time,
+      consultation_type: type,
+      notes: notes.trim(),
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Appointment booked successfully!");
+      navigate("/patient-dashboard");
+    }
+    setLoading(false);
+  };
+
+  if (!doctor) {
+    return (
+      <div className="container py-20 text-center text-muted-foreground">Loading doctor information...</div>
+    );
+  }
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split("T")[0];
+
+  return (
+    <div className="container py-8 max-w-2xl">
+      <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+      </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-display text-xl">Book Appointment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Doctor info */}
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 mb-6">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-lg">
+              {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+            </div>
+            <div>
+              <p className="font-display font-semibold text-foreground">
+                Dr. {profile?.first_name} {profile?.last_name}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <Badge variant="secondary">{doctor.specialty || "General"}</Badge>
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <DollarSign className="h-3.5 w-3.5" />${doctor.consultation_fee}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Date</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={minDate} required />
+              </div>
+              <div>
+                <Label>Time</Label>
+                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={doctor.available_start_time} max={doctor.available_end_time} required />
+              </div>
+            </div>
+            <div>
+              <Label>Consultation Type</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="video">
+                    <div className="flex items-center gap-2"><Video className="h-4 w-4" /> Video Call</div>
+                  </SelectItem>
+                  <SelectItem value="chat">
+                    <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Chat</div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Notes (optional)</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe your symptoms or reason for visit..." maxLength={500} rows={3} />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Booking..." : "Confirm Booking"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
