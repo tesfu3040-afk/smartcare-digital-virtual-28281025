@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Video, MessageSquare, FlaskConical, Pill, Brain, HeartPulse, Truck, FileText, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import clinicalBg from "@/assets/clinical-bg.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -63,10 +64,11 @@ const services = [
 export default function Services() {
   return (
     <div>
-      <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
-        <div className="container text-center max-w-3xl">
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-foreground">Our Services</h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+      <section className="relative py-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="container text-center max-w-3xl relative z-10">
+          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-white">Our Services</h1>
+          <p className="mt-4 text-lg text-white/80">
             Comprehensive virtual healthcare services to meet all your medical needs.
           </p>
         </div>

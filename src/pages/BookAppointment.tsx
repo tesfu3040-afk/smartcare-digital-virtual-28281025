@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, MessageSquare, DollarSign, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import clinicalBg from "@/assets/clinical-bg.png";
 
 export default function BookAppointment() {
   const { doctorId } = useParams<{ doctorId: string }>();
@@ -75,7 +76,15 @@ export default function BookAppointment() {
   const minDate = tomorrow.toISOString().split("T")[0];
 
   return (
-    <div className="container py-8 max-w-2xl">
+    <div>
+      <section className="relative py-16 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="container text-center max-w-3xl relative z-10">
+          <h1 className="font-display text-3xl md:text-4xl font-bold text-white">Book Appointment</h1>
+          <p className="mt-2 text-white/80">Schedule your consultation with a healthcare professional</p>
+        </div>
+      </section>
+      <div className="container py-8 max-w-2xl">
       <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
         <ArrowLeft className="h-4 w-4 mr-1" /> Back
       </Button>
@@ -140,6 +149,7 @@ export default function BookAppointment() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
