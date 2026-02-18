@@ -14,8 +14,15 @@ import {
   ArrowRight,
   Calendar,
   HeartPulse,
+  Stethoscope,
+  Activity,
+  Heart,
+  Syringe,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import clinicalBg from "@/assets/clinical-bg.png";
+import doctorHero1 from "@/assets/doctor-hero-1.png";
+import doctorHero2 from "@/assets/doctor-hero-2.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -24,6 +31,22 @@ const fadeUp = {
     y: 0,
     transition: { delay: i * 0.1, duration: 0.5 },
   }),
+};
+
+const floatAnimation = {
+  y: [0, -15, 0],
+  transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const },
+};
+
+const floatAnimationSlow = {
+  y: [0, -10, 0],
+  transition: { duration: 5, repeat: Infinity, ease: "easeInOut" as const, delay: 1 },
+};
+
+const pulseFloat = {
+  scale: [1, 1.1, 1],
+  opacity: [0.7, 1, 0.7],
+  transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const },
 };
 
 const services = [
@@ -46,8 +69,49 @@ const Index = () => {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-        <div className="container py-20 md:py-32">
+      <section className="relative overflow-hidden min-h-[85vh] flex items-center" style={{ background: "linear-gradient(135deg, hsl(211 80% 25%) 0%, hsl(211 80% 42%) 40%, hsl(199 89% 48%) 100%)" }}>
+        {/* Background clinical image with overlay */}
+        <div className="absolute inset-0">
+          <img src={clinicalBg} alt="" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-primary/80" />
+        </div>
+
+        {/* Floating clinical icons */}
+        <motion.div animate={pulseFloat} className="absolute top-20 right-[15%] hidden lg:block">
+          <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <Heart className="h-7 w-7 text-white/70" />
+          </div>
+        </motion.div>
+        <motion.div animate={{ ...pulseFloat, transition: { ...pulseFloat.transition, delay: 0.5 } }} className="absolute top-40 left-[8%] hidden lg:block">
+          <div className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <Activity className="h-6 w-6 text-white/60" />
+          </div>
+        </motion.div>
+        <motion.div animate={{ ...pulseFloat, transition: { ...pulseFloat.transition, delay: 1.5 } }} className="absolute bottom-32 left-[12%] hidden lg:block">
+          <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <Stethoscope className="h-8 w-8 text-white/60" />
+          </div>
+        </motion.div>
+        <motion.div animate={{ ...pulseFloat, transition: { ...pulseFloat.transition, delay: 2 } }} className="absolute bottom-20 right-[8%] hidden lg:block">
+          <div className="h-10 w-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <Syringe className="h-5 w-5 text-white/50" />
+          </div>
+        </motion.div>
+
+        {/* Animated pulse line */}
+        <svg className="absolute bottom-0 left-0 w-full h-24 opacity-10" viewBox="0 0 1200 100" preserveAspectRatio="none">
+          <motion.path
+            d="M0,50 L200,50 L230,20 L250,80 L270,30 L290,70 L310,50 L500,50 L530,15 L550,85 L570,25 L590,75 L610,50 L800,50 L830,20 L850,80 L870,30 L890,70 L910,50 L1200,50"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          />
+        </svg>
+
+        <div className="container relative z-10 py-20 md:py-28">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -55,70 +119,97 @@ const Index = () => {
               transition={{ duration: 0.6 }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium">
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white rounded-full px-4 py-1.5 text-sm font-medium border border-white/20">
                 <ShieldCheck className="h-4 w-4" /> Trusted Virtual Healthcare
               </div>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground">
+              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-white">
                 Quality Healthcare,{" "}
-                <span className="text-gradient">Anytime, Anywhere</span>
+                <span className="text-secondary">Anytime, Anywhere</span>
               </h1>
-              <p className="text-lg text-muted-foreground max-w-lg">
+              <p className="text-lg text-white/80 max-w-lg">
                 Connect with certified doctors through video or chat consultations. Get prescriptions, lab results, and pharmacy services — all from the comfort of your home.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button size="lg" asChild>
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold" asChild>
                   <Link to="/auth?tab=register">
                     Book Consultation <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" asChild>
                   <Link to="/doctors">Browse Doctors</Link>
                 </Button>
               </div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative hidden md:block"
-            >
-              <div className="relative rounded-2xl bg-gradient-to-br from-primary to-secondary p-1">
-                <div className="bg-card rounded-xl p-8 space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Calendar className="h-7 w-7 text-primary" />
+            <div className="relative hidden md:flex items-center justify-center">
+              {/* Doctor images with floating animation */}
+              <motion.div
+                animate={floatAnimation}
+                className="relative z-20"
+              >
+                <div className="relative">
+                  <div className="absolute -inset-2 rounded-3xl bg-white/10 blur-xl" />
+                  <img
+                    src={doctorHero1}
+                    alt="Doctor"
+                    className="relative rounded-2xl w-64 h-80 object-cover shadow-2xl border-2 border-white/20"
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                animate={floatAnimationSlow}
+                className="absolute -right-4 top-10 z-10"
+              >
+                <div className="relative">
+                  <div className="absolute -inset-2 rounded-3xl bg-white/10 blur-xl" />
+                  <img
+                    src={doctorHero2}
+                    alt="Doctor"
+                    className="relative rounded-2xl w-52 h-64 object-cover shadow-2xl border-2 border-white/20 opacity-90"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Floating stats card */}
+              <motion.div
+                animate={{ y: [0, -8, 0], transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const, delay: 0.5 } }}
+                className="absolute -left-6 bottom-4 z-30"
+              >
+                <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-display font-semibold text-foreground">Next Appointment</p>
-                      <p className="text-sm text-muted-foreground">Today at 2:30 PM</p>
+                      <p className="text-xl font-display font-bold text-foreground">50K+</p>
+                      <p className="text-xs text-muted-foreground">Happy Patients</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { icon: Video, label: "Video Call", color: "bg-primary/10 text-primary" },
-                      { icon: MessageSquare, label: "Chat", color: "bg-secondary/10 text-secondary" },
-                      { icon: FlaskConical, label: "Lab Results", color: "bg-accent/10 text-accent" },
-                      { icon: Pill, label: "Prescriptions", color: "bg-warning/10 text-warning" },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="flex items-center gap-3 rounded-lg border p-3 hover:shadow-md transition-shadow"
-                      >
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${item.color}`}>
-                          <item.icon className="h-5 w-5" />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">{item.label}</span>
-                      </div>
-                    ))}
+                </div>
+              </motion.div>
+
+              {/* Floating appointment card */}
+              <motion.div
+                animate={{ y: [0, -12, 0], transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const, delay: 1.5 } }}
+                className="absolute -right-8 -top-4 z-30"
+              >
+                <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 shadow-2xl">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-accent" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">Next Appointment</p>
+                      <p className="text-[10px] text-muted-foreground">Today, 2:30 PM</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
-
       {/* Stats */}
       <section className="border-y bg-card">
         <div className="container py-10">
