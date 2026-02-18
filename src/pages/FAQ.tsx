@@ -1,6 +1,7 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import clinicalBg from "@/assets/clinical-bg.png";
 
 const faqs = [
   { q: "How do I book an appointment?", a: "Sign up for a free account, browse our list of doctors, select your preferred doctor, choose a date and time, and confirm your booking." },
@@ -18,10 +19,11 @@ const faqs = [
 export default function FAQ() {
   return (
     <div>
-      <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
-        <div className="container text-center max-w-3xl">
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-foreground">Frequently Asked Questions</h1>
-          <p className="mt-4 text-lg text-muted-foreground">Find answers to common questions about SmartCare.</p>
+      <section className="relative py-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="container text-center max-w-3xl relative z-10">
+          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-white">Frequently Asked Questions</h1>
+          <p className="mt-4 text-lg text-white/80">Find answers to common questions about SmartCare.</p>
         </div>
       </section>
 

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Stethoscope, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import clinicalBg from "@/assets/clinical-bg.png";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -106,8 +107,9 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12">
-      <Card className="w-full max-w-md">
+    <div className="relative min-h-[80vh] flex items-center justify-center py-12" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
+      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">

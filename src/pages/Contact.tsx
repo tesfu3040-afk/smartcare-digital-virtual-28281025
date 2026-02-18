@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
+import clinicalBg from "@/assets/clinical-bg.png";
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
@@ -21,10 +22,11 @@ export default function Contact() {
 
   return (
     <div>
-      <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
-        <div className="container text-center max-w-3xl">
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-foreground">Contact Us</h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+      <section className="relative py-20 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="container text-center max-w-3xl relative z-10">
+          <h1 className="font-display text-4xl md:text-5xl font-extrabold text-white">Contact Us</h1>
+          <p className="mt-4 text-lg text-white/80">
             We're here to help. Reach out with any questions or concerns.
           </p>
         </div>
