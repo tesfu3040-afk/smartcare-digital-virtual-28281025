@@ -166,6 +166,59 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          admin_notes: string | null
+          admin_verified: boolean
+          amount: number
+          appointment_id: string
+          created_at: string
+          doctor_confirmed: boolean
+          doctor_id: string
+          id: string
+          patient_id: string
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          admin_verified?: boolean
+          amount?: number
+          appointment_id: string
+          created_at?: string
+          doctor_confirmed?: boolean
+          doctor_id: string
+          id?: string
+          patient_id: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          admin_verified?: boolean
+          amount?: number
+          appointment_id?: string
+          created_at?: string
+          doctor_confirmed?: boolean
+          doctor_id?: string
+          id?: string
+          patient_id?: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescriptions: {
         Row: {
           appointment_id: string | null

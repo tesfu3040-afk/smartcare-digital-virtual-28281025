@@ -4,36 +4,94 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Users,
   Stethoscope,
   Calendar,
-  DollarSign,
   CheckCircle,
-  XCircle,
   Shield,
   TrendingUp,
+  Plus,
+  DollarSign,
+  Image,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const PRESET_SPECIALTIES = [
+  "General Practice",
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
+  "Psychiatry",
+  "Gynecology",
+  "Ophthalmology",
+  "ENT",
+  "Anesthesiology",
+  "Midwifery",
+  "Geriatrics",
+  "Maternal & Fetal Medicine",
+  "Neonatology",
+  "Surgery",
+  "Radiology",
+  "Pathology",
+];
 
 export default function AdminDashboard() {
   const { role } = useAuth();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+
+  // Add doctor form state
+  const [addDoctorOpen, setAddDoctorOpen] = useState(false);
+  const [newDoctor, setNewDoctor] = useState({
+    email: "",
+    password: "",
+    first_name: "",
+    last_name: "",
+    specialty: "",
+    custom_specialty: "",
+    experience_years: 0,
+    consultation_fee: 0,
+    bio: "",
+  });
+  const [useCustomSpecialty, setUseCustomSpecialty] = useState(false);
+  const [addingDoctor, setAddingDoctor] = useState(false);
 
   useEffect(() => {
     if (role !== "admin") return;
     const fetchData = async () => {
-      const [docRes, profRes, apptRes] = await Promise.all([
+      const [docRes, profRes, apptRes, payRes] = await Promise.all([
         supabase.from("doctors").select("*, profiles!doctors_user_id_fkey(first_name, last_name, email)"),
         supabase.from("profiles").select("*").limit(50),
         supabase.from("appointments").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
       setDoctors(docRes.data ?? []);
       setProfiles(profRes.data ?? []);
       setAppointments(apptRes.data ?? []);
+      setPayments(payRes.data ?? []);
     };
     fetchData();
   }, [role]);
@@ -54,6 +112,72 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAddDoctor = async () => {
+    const specialty = useCustomSpecialty ? newDoctor.custom_specialty : newDoctor.specialty;
+    if (!newDoctor.email || !newDoctor.password || !newDoctor.first_name || !specialty) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    setAddingDoctor(true);
+    try {
+      // Sign up the doctor user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: newDoctor.email,
+        password: newDoctor.password,
+        options: {
+          data: {
+            first_name: newDoctor.first_name,
+            last_name: newDoctor.last_name,
+            role: "doctor",
+          },
+        },
+      });
+      if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error("Failed to create user");
+
+      // Insert doctor record (trigger handles profile + role)
+      const { error: docError } = await supabase.from("doctors").insert({
+        user_id: signUpData.user.id,
+        specialty,
+        experience_years: newDoctor.experience_years,
+        consultation_fee: newDoctor.consultation_fee,
+        bio: newDoctor.bio,
+        is_approved: true,
+        approved_at: new Date().toISOString(),
+      });
+      if (docError) throw docError;
+
+      toast.success("Doctor added successfully!");
+      setAddDoctorOpen(false);
+      setNewDoctor({ email: "", password: "", first_name: "", last_name: "", specialty: "", custom_specialty: "", experience_years: 0, consultation_fee: 0, bio: "" });
+      setUseCustomSpecialty(false);
+
+      // Refresh
+      const { data } = await supabase.from("doctors").select("*, profiles!doctors_user_id_fkey(first_name, last_name, email)");
+      setDoctors(data ?? []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add doctor");
+    } finally {
+      setAddingDoctor(false);
+    }
+  };
+
+  const verifyPayment = async (paymentId: string, verified: boolean) => {
+    const { error } = await supabase
+      .from("payments")
+      .update({ admin_verified: verified, status: verified ? "verified" : "rejected" })
+      .eq("id", paymentId);
+    if (error) toast.error("Failed to update payment");
+    else {
+      toast.success(verified ? "Payment verified!" : "Payment rejected");
+      setPayments((prev) =>
+        prev.map((p) =>
+          p.id === paymentId ? { ...p, admin_verified: verified, status: verified ? "verified" : "rejected" } : p
+        )
+      );
+    }
+  };
+
   if (role !== "admin") {
     return (
       <div className="container py-20 text-center">
@@ -66,12 +190,86 @@ export default function AdminDashboard() {
 
   const pendingDoctors = doctors.filter((d) => !d.is_approved);
   const completedAppts = appointments.filter((a) => a.status === "completed");
+  const pendingPayments = payments.filter((p) => p.status === "submitted" || p.status === "doctor_confirmed");
 
   return (
     <div className="container py-8">
-      <div className="mb-8">
-        <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground text-sm">Manage SmartCare platform</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Manage SmartCare platform</p>
+        </div>
+        <Dialog open={addDoctorOpen} onOpenChange={setAddDoctorOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" /> Add Doctor</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-display">Add New Doctor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>First Name *</Label>
+                  <Input value={newDoctor.first_name} onChange={(e) => setNewDoctor({ ...newDoctor, first_name: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Last Name</Label>
+                  <Input value={newDoctor.last_name} onChange={(e) => setNewDoctor({ ...newDoctor, last_name: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Email *</Label>
+                <Input type="email" value={newDoctor.email} onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Password *</Label>
+                <Input type="password" value={newDoctor.password} onChange={(e) => setNewDoctor({ ...newDoctor, password: e.target.value })} />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>Specialty *</Label>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setUseCustomSpecialty(!useCustomSpecialty)}>
+                    {useCustomSpecialty ? "Choose from list" : "Custom specialty"}
+                  </Button>
+                </div>
+                {useCustomSpecialty ? (
+                  <Input
+                    placeholder="e.g. Anesthesiology, Midwifery, etc."
+                    value={newDoctor.custom_specialty}
+                    onChange={(e) => setNewDoctor({ ...newDoctor, custom_specialty: e.target.value })}
+                  />
+                ) : (
+                  <Select value={newDoctor.specialty} onValueChange={(v) => setNewDoctor({ ...newDoctor, specialty: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select specialty" /></SelectTrigger>
+                    <SelectContent>
+                      {PRESET_SPECIALTIES.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Experience (years)</Label>
+                  <Input type="number" value={newDoctor.experience_years} onChange={(e) => setNewDoctor({ ...newDoctor, experience_years: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <Label>Consultation Fee</Label>
+                  <Input type="number" value={newDoctor.consultation_fee} onChange={(e) => setNewDoctor({ ...newDoctor, consultation_fee: parseFloat(e.target.value) || 0 })} />
+                </div>
+              </div>
+              <div>
+                <Label>Bio</Label>
+                <Input value={newDoctor.bio} onChange={(e) => setNewDoctor({ ...newDoctor, bio: e.target.value })} />
+              </div>
+              <Button className="w-full" onClick={handleAddDoctor} disabled={addingDoctor}>
+                {addingDoctor ? "Adding..." : "Add Doctor"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -100,6 +298,9 @@ export default function AdminDashboard() {
           <TabsTrigger value="doctors">
             Doctors {pendingDoctors.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingDoctors.length}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="payments">
+            Payments {pendingPayments.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingPayments.length}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
         </TabsList>
@@ -121,6 +322,9 @@ export default function AdminDashboard() {
                           Dr. {d.profiles?.first_name} {d.profiles?.last_name}
                         </p>
                         <p className="text-sm text-muted-foreground">{d.specialty || "Not specified"} • {d.profiles?.email}</p>
+                        {d.consultation_fee > 0 && (
+                          <p className="text-xs text-muted-foreground">Fee: ${d.consultation_fee}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -137,6 +341,66 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-6">
+          <div className="space-y-3">
+            {payments.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No payments yet</p>
+            ) : (
+              payments.map((p) => {
+                const patient = profiles.find((pr) => pr.user_id === p.patient_id);
+                const doctor = doctors.find((d) => d.user_id === p.doctor_id);
+                return (
+                  <Card key={p.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {patient?.first_name} {patient?.last_name} → Dr. {doctor?.profiles?.first_name} {doctor?.profiles?.last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Amount: ${p.amount} • {new Date(p.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {p.doctor_confirmed && (
+                            <Badge className="bg-primary/10 text-primary">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Doctor Confirmed
+                            </Badge>
+                          )}
+                          <Badge className={
+                            p.status === "verified" ? "bg-success/10 text-success" :
+                            p.status === "rejected" ? "bg-destructive/10 text-destructive" :
+                            "bg-warning/10 text-warning"
+                          }>
+                            {p.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      {p.screenshot_url && (
+                        <div className="mb-3">
+                          <a href={p.screenshot_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                            <Image className="h-4 w-4" /> View Payment Screenshot
+                          </a>
+                        </div>
+                      )}
+                      {(p.status === "submitted" || p.status === "doctor_confirmed") && (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => verifyPayment(p.id, true)}>
+                            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify Payment
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => verifyPayment(p.id, false)}>
+                            <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         </TabsContent>
