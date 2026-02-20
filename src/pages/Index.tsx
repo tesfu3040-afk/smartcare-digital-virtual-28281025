@@ -312,8 +312,8 @@ const Index = () => {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             { name: "Sarah M.", text: "SmartCare made it so easy to see a doctor. The video consultation was seamless!", rating: 5 },
-            { name: "James K.", text: "I got my prescription delivered the same day. Amazing service!", rating: 5 },
-            { name: "Maria L.", text: "The mental health support was exactly what I needed. Highly recommend!", rating: 5 },
+            { name: "Mekdelawit Dejen", text: "I got my prescription delivered the same day. Amazing service!", rating: 5 },
+            { name: "Mariamawit Eyasu", text: "The mental health support was exactly what I needed. Highly recommend!", rating: 5 },
           ].map((t, i) => (
             <motion.div
               key={t.name}

@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -88,6 +109,36 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          message: string
+          name: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          message: string
+          name: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          name?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       doctors: {
         Row: {
           approved_at: string | null
@@ -100,6 +151,7 @@ export type Database = {
           experience_years: number | null
           id: string
           is_approved: boolean
+          photo_url: string | null
           specialty: string
           updated_at: string
           user_id: string
@@ -115,6 +167,7 @@ export type Database = {
           experience_years?: number | null
           id?: string
           is_approved?: boolean
+          photo_url?: string | null
           specialty?: string
           updated_at?: string
           user_id: string
@@ -130,6 +183,7 @@ export type Database = {
           experience_years?: number | null
           id?: string
           is_approved?: boolean
+          photo_url?: string | null
           specialty?: string
           updated_at?: string
           user_id?: string

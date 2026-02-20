@@ -5,20 +5,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAppSettings } from "@/hooks/use-app-settings";
 import clinicalBg from "@/assets/clinical-bg.png";
 
 export default function Contact() {
   const [sending, setSending] = useState(false);
+  const { settings, loading } = useAppSettings();
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
+    const { error } = await supabase.from("contact_messages" as any).insert({
+      name: form.name,
+      email: form.email,
+      subject: form.subject,
+      message: form.message,
+    } as any);
+    if (error) {
+      toast.error("Failed to send message. Please try again.");
+    } else {
       toast.success("Message sent! We'll get back to you soon.");
-      setSending(false);
-      (e.target as HTMLFormElement).reset();
-    }, 1000);
+      setForm({ name: "", email: "", subject: "", message: "" });
+    }
+    setSending(false);
   };
+
+  const contactPhone = settings.contact_phone || "1-800-123-4567";
+  const contactEmail = settings.contact_email || "support@smartcare.com";
 
   return (
     <div>
@@ -40,11 +55,11 @@ export default function Contact() {
                 <h2 className="font-display font-bold text-xl text-foreground mb-6">Send Us a Message</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Input placeholder="Your Name" required maxLength={100} />
-                    <Input placeholder="Email Address" type="email" required maxLength={255} />
+                    <Input placeholder="Your Name" required maxLength={100} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    <Input placeholder="Email Address" type="email" required maxLength={255} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   </div>
-                  <Input placeholder="Subject" required maxLength={200} />
-                  <Textarea placeholder="Your message..." rows={5} required maxLength={1000} />
+                  <Input placeholder="Subject" required maxLength={200} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+                  <Textarea placeholder="Your message..." rows={5} required maxLength={1000} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
                   <Button type="submit" disabled={sending}>
                     <Send className="h-4 w-4 mr-2" /> {sending ? "Sending..." : "Send Message"}
                   </Button>
@@ -55,8 +70,8 @@ export default function Contact() {
 
           <div className="space-y-4">
             {[
-              { icon: Phone, title: "Phone", detail: "1-800-123-4567", sub: "Mon–Fri 8am–8pm" },
-              { icon: Mail, title: "Email", detail: "support@smartcare.com", sub: "Response within 24h" },
+              { icon: Phone, title: "Phone", detail: contactPhone, sub: "Mon–Fri 8am–8pm" },
+              { icon: Mail, title: "Email", detail: contactEmail, sub: "Response within 24h" },
               { icon: MapPin, title: "Address", detail: "123 Healthcare Ave", sub: "Medical City, MC 10001" },
               { icon: Clock, title: "Hours", detail: "24/7 Consultations", sub: "Support: Mon–Fri 8am–8pm" },
             ].map((c) => (
