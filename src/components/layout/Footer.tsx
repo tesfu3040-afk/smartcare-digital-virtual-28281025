@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import { Stethoscope, Mail, Phone, MapPin } from "lucide-react";
+import { useAppSettings } from "@/hooks/use-app-settings";
 
 export default function Footer() {
+  const { settings } = useAppSettings();
+  const contactPhone = settings.contact_phone || "1-800-123-4567";
+  const contactEmail = settings.contact_email || "support@smartcare.com";
+
   return (
     <footer className="bg-foreground text-background/80">
       <div className="container py-16">
@@ -56,10 +61,10 @@ export default function Footer() {
             <h4 className="font-display font-semibold text-background mb-4">Contact</h4>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary" /> 1-800-123-4567
+                <Phone className="h-4 w-4 text-primary" /> {contactPhone}
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-primary" /> support@smartcare.com
+                <Mail className="h-4 w-4 text-primary" /> {contactEmail}
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppSettings } from "@/hooks/use-app-settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Video, MessageSquare, DollarSign, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, Video, MessageSquare, DollarSign, ArrowLeft, Landmark, Info } from "lucide-react";
 import { toast } from "sonner";
 import clinicalBg from "@/assets/clinical-bg.png";
 
@@ -17,6 +18,7 @@ export default function BookAppointment() {
   const { doctorId } = useParams<{ doctorId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
   const [doctor, setDoctor] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [date, setDate] = useState("");
@@ -59,7 +61,7 @@ export default function BookAppointment() {
     });
     if (error) toast.error(error.message);
     else {
-      toast.success("Appointment booked successfully!");
+      toast.success("Appointment booked! Please transfer the fee and upload your receipt from your dashboard.");
       navigate("/patient-dashboard");
     }
     setLoading(false);
@@ -74,6 +76,8 @@ export default function BookAppointment() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split("T")[0];
+
+  const hasBankInfo = settings.bank_account_number && settings.bank_name;
 
   return (
     <div>
@@ -111,6 +115,26 @@ export default function BookAppointment() {
               </div>
             </div>
           </div>
+
+          {/* Bank / Payment Info */}
+          {hasBankInfo && (
+            <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 mb-6 space-y-2">
+              <div className="flex items-center gap-2 text-primary font-display font-semibold text-sm">
+                <Landmark className="h-4 w-4" /> Payment Information
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {settings.payment_instructions}
+              </p>
+              <div className="text-sm text-foreground space-y-1">
+                <p><span className="font-medium">Bank:</span> {settings.bank_name}</p>
+                <p><span className="font-medium">Account:</span> {settings.bank_account_number}</p>
+              </div>
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground mt-1">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>After booking, upload your payment receipt from your dashboard.</span>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
