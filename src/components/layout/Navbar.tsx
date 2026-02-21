@@ -37,7 +37,7 @@ export default function Navbar() {
       {/* Emergency bar */}
       <div className="bg-destructive text-destructive-foreground text-center text-sm py-1.5 font-medium flex items-center justify-center gap-2">
         <Phone className="h-3.5 w-3.5" />
-        Emergency? Call 911 or{" "}
+        Emergency? Call{" "}
         <a href={`tel:${emergencyPhone}`} className="underline font-bold">
           {emergencyPhone}
         </a>

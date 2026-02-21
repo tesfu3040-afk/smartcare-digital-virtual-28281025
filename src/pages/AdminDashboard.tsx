@@ -155,8 +155,11 @@ export default function AdminDashboard() {
         },
       });
 
+      // supabase.functions.invoke returns { data, error }
+      // For 2xx responses, data contains the response body and error is null
+      const result = res.data;
       if (res.error) throw new Error(res.error.message || "Failed to add doctor");
-      if (res.data?.error) throw new Error(res.data.error);
+      if (result?.error) throw new Error(result.error);
 
       toast.success("Doctor added successfully!");
       setAddDoctorOpen(false);
