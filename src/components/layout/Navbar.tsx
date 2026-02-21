@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
+import { useAppSettings } from "@/hooks/use-app-settings";
 import {
   Menu,
   X,
@@ -25,6 +26,8 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
+  const emergencyPhone = settings.emergency_phone || "1-800-123-4567";
 
   const dashboardPath =
     role === "admin" ? "/admin" : role === "doctor" ? "/doctor-dashboard" : "/patient-dashboard";
@@ -35,8 +38,8 @@ export default function Navbar() {
       <div className="bg-destructive text-destructive-foreground text-center text-sm py-1.5 font-medium flex items-center justify-center gap-2">
         <Phone className="h-3.5 w-3.5" />
         Emergency? Call 911 or{" "}
-        <a href="tel:+18001234567" className="underline font-bold">
-          1-800-123-4567
+        <a href={`tel:${emergencyPhone}`} className="underline font-bold">
+          {emergencyPhone}
         </a>
       </div>
 
