@@ -94,14 +94,21 @@ export default function AdminDashboard() {
     if (role !== "admin") return;
     const fetchData = async () => {
       const [docRes, profRes, apptRes, payRes, msgRes] = await Promise.all([
-        supabase.from("doctors").select("*, profiles!doctors_user_id_fkey(first_name, last_name, email)"),
+        supabase.from("doctors").select("*"),
         supabase.from("profiles").select("*").limit(50),
         supabase.from("appointments").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(50),
-        supabase.from("contact_messages" as any).select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
-      setDoctors(docRes.data ?? []);
-      setProfiles(profRes.data ?? []);
+      // Manually join doctor profiles
+      const doctorsList = docRes.data ?? [];
+      const allProfiles = profRes.data ?? [];
+      const doctorsWithProfiles = doctorsList.map((d: any) => {
+        const profile = allProfiles.find((p: any) => p.user_id === d.user_id);
+        return { ...d, profiles: profile || null };
+      });
+      setDoctors(doctorsWithProfiles);
+      setProfiles(allProfiles);
       setAppointments(apptRes.data ?? []);
       setPayments(payRes.data ?? []);
       setContactMessages((msgRes.data as any[]) ?? []);
@@ -131,40 +138,43 @@ export default function AdminDashboard() {
     }
     setAddingDoctor(true);
     try {
-      // Use the admin endpoint to create user without affecting current session
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: newDoctor.email,
-        password: newDoctor.password,
-        options: {
-          data: {
-            first_name: newDoctor.first_name,
-            last_name: newDoctor.last_name,
-            role: "doctor",
-          },
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await supabase.functions.invoke("create-doctor", {
+        body: {
+          email: newDoctor.email,
+          password: newDoctor.password,
+          first_name: newDoctor.first_name,
+          last_name: newDoctor.last_name,
+          specialty,
+          experience_years: newDoctor.experience_years,
+          consultation_fee: newDoctor.consultation_fee,
+          bio: newDoctor.bio,
         },
       });
-      if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error("Failed to create user");
 
-      // Insert doctor record
-      const { error: docError } = await supabase.from("doctors").insert({
-        user_id: signUpData.user.id,
-        specialty,
-        experience_years: newDoctor.experience_years,
-        consultation_fee: newDoctor.consultation_fee,
-        bio: newDoctor.bio,
-        is_approved: true,
-        approved_at: new Date().toISOString(),
-      });
-      if (docError) throw docError;
+      if (res.error) throw new Error(res.error.message || "Failed to add doctor");
+      if (res.data?.error) throw new Error(res.data.error);
 
       toast.success("Doctor added successfully!");
       setAddDoctorOpen(false);
       setNewDoctor({ email: "", password: "", first_name: "", last_name: "", specialty: "", custom_specialty: "", experience_years: 0, consultation_fee: 0, bio: "" });
       setUseCustomSpecialty(false);
 
-      const { data } = await supabase.from("doctors").select("*, profiles!doctors_user_id_fkey(first_name, last_name, email)");
-      setDoctors(data ?? []);
+      // Refresh doctors list
+      const [docRes, profRes] = await Promise.all([
+        supabase.from("doctors").select("*"),
+        supabase.from("profiles").select("*").limit(50),
+      ]);
+      const doctorsList = docRes.data ?? [];
+      const allProfiles = profRes.data ?? [];
+      setDoctors(doctorsList.map((d: any) => {
+        const profile = allProfiles.find((p: any) => p.user_id === d.user_id);
+        return { ...d, profiles: profile || null };
+      }));
+      setProfiles(allProfiles);
     } catch (err: any) {
       toast.error(err.message || "Failed to add doctor");
     } finally {
@@ -175,18 +185,18 @@ export default function AdminDashboard() {
   const handleUploadDoctorPhoto = async (file: File, doctorId: string) => {
     setUploadingPhotoFor(doctorId);
     try {
-      const filePath = `doctor-photos/${doctorId}_${Date.now()}.${file.name.split('.').pop()}`;
+      const filePath = `${doctorId}_${Date.now()}.${file.name.split('.').pop()}`;
       const { error: uploadError } = await supabase.storage
-        .from("medical-documents")
+        .from("doctor-photos")
         .upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("medical-documents")
+        .from("doctor-photos")
         .getPublicUrl(filePath);
 
       const { error } = await supabase.from("doctors")
-        .update({ photo_url: urlData.publicUrl } as any)
+        .update({ photo_url: urlData.publicUrl })
         .eq("id", doctorId);
       if (error) throw error;
 
