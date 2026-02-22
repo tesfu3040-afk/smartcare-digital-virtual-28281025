@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, Clock, DollarSign, Calendar } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import clinicalBg from "@/assets/clinical-bg.png";
 
@@ -21,17 +22,7 @@ interface Doctor {
   profile?: { first_name: string; last_name: string; avatar_url: string | null };
 }
 
-const specialties = [
-  "All Specialties",
-  "General Practice",
-  "Cardiology",
-  "Dermatology",
-  "Pediatrics",
-  "Psychiatry",
-  "Orthopedics",
-  "Neurology",
-  "Gynecology",
-];
+
 
 export default function Doctors() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -104,9 +95,12 @@ export default function Doctors() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {specialties.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
+              <ScrollArea className="max-h-60">
+                <SelectItem value="All Specialties">All Specialties</SelectItem>
+                {Array.from(new Set(doctors.map((d) => d.specialty).filter(Boolean))).sort().map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </ScrollArea>
             </SelectContent>
           </Select>
         </div>

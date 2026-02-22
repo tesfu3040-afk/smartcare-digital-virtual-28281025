@@ -30,14 +30,19 @@ export default function BookAppointment() {
   useEffect(() => {
     if (!doctorId) return;
     const fetchDoctor = async () => {
-      const { data } = await supabase
+      const { data: doctorData } = await supabase
         .from("doctors")
-        .select("*, profiles!doctors_user_id_fkey(first_name, last_name)")
+        .select("*")
         .eq("user_id", doctorId)
         .maybeSingle();
-      if (data) {
-        setDoctor(data);
-        setProfile(data.profiles);
+      if (doctorData) {
+        setDoctor(doctorData);
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("user_id", doctorId)
+          .maybeSingle();
+        setProfile(profileData);
       }
     };
     fetchDoctor();
