@@ -39,6 +39,8 @@ export type Database = {
         Row: {
           appointment_date: string
           appointment_time: string
+          consultation_code: string | null
+          consultation_code_used: boolean
           consultation_type: string
           created_at: string
           doctor_id: string
@@ -52,6 +54,8 @@ export type Database = {
         Insert: {
           appointment_date: string
           appointment_time: string
+          consultation_code?: string | null
+          consultation_code_used?: boolean
           consultation_type?: string
           created_at?: string
           doctor_id: string
@@ -65,6 +69,8 @@ export type Database = {
         Update: {
           appointment_date?: string
           appointment_time?: string
+          consultation_code?: string | null
+          consultation_code_used?: boolean
           consultation_type?: string
           created_at?: string
           doctor_id?: string

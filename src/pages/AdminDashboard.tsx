@@ -214,14 +214,37 @@ export default function AdminDashboard() {
     }
   };
 
+  const generateConsultationCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "SC-";
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  };
+
   const verifyPayment = async (paymentId: string, verified: boolean) => {
+    const payment = payments.find((p) => p.id === paymentId);
+    let consultationCode: string | null = null;
+
+    if (verified && payment) {
+      consultationCode = generateConsultationCode();
+      // Store consultation code on the appointment
+      const { error: codeError } = await supabase
+        .from("appointments")
+        .update({ consultation_code: consultationCode } as any)
+        .eq("id", payment.appointment_id);
+      if (codeError) {
+        toast.error("Failed to generate consultation code");
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("payments")
       .update({ admin_verified: verified, status: verified ? "verified" : "rejected" })
       .eq("id", paymentId);
     if (error) toast.error("Failed to update payment");
     else {
-      toast.success(verified ? "Payment verified!" : "Payment rejected");
+      toast.success(verified ? `Payment verified! Consultation code: ${consultationCode}` : "Payment rejected");
       setPayments((prev) =>
         prev.map((p) => p.id === paymentId ? { ...p, admin_verified: verified, status: verified ? "verified" : "rejected" } : p)
       );
@@ -262,7 +285,7 @@ export default function AdminDashboard() {
 
   const pendingDoctors = doctors.filter((d) => !d.is_approved);
   const completedAppts = appointments.filter((a) => a.status === "completed");
-  const pendingPayments = payments.filter((p) => p.status === "submitted" || p.status === "doctor_confirmed");
+  const pendingPayments = payments.filter((p) => p.status === "submitted");
   const unreadMessages = contactMessages.filter((m: any) => !m.is_read);
 
   return (
@@ -477,12 +500,7 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {p.doctor_confirmed && (
-                            <Badge className="bg-primary/10 text-primary">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Doctor Confirmed
-                            </Badge>
-                          )}
-                          <Badge className={
+                      <Badge className={
                             p.status === "verified" ? "bg-success/10 text-success" :
                             p.status === "rejected" ? "bg-destructive/10 text-destructive" :
                             "bg-warning/10 text-warning"
@@ -498,7 +516,7 @@ export default function AdminDashboard() {
                           </a>
                         </div>
                       )}
-                      {(p.status === "submitted" || p.status === "doctor_confirmed") && (
+                      {p.status === "submitted" && (
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => verifyPayment(p.id, true)}>
                             <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify Payment
