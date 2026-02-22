@@ -12,30 +12,25 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
-  DollarSign,
 } from "lucide-react";
-import { toast } from "sonner";
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [doctor, setDoctor] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const [profileRes, doctorRes, apptRes, payRes] = await Promise.all([
+      const [profileRes, doctorRes, apptRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("doctors").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("appointments").select("*").eq("doctor_id", user.id).order("appointment_date", { ascending: false }).limit(20),
-        supabase.from("payments").select("*").eq("doctor_id", user.id).order("created_at", { ascending: false }),
       ]);
       setProfile(profileRes.data);
       setDoctor(doctorRes.data);
       setAppointments(apptRes.data ?? []);
-      setPayments(payRes.data ?? []);
     };
     fetchData();
   }, [user]);
@@ -51,23 +46,6 @@ export default function DoctorDashboard() {
     );
   };
 
-  const confirmPayment = async (paymentId: string) => {
-    const { error } = await supabase
-      .from("payments")
-      .update({ doctor_confirmed: true, status: "doctor_confirmed" })
-      .eq("id", paymentId);
-    if (error) {
-      toast.error("Failed to confirm payment");
-    } else {
-      toast.success("Payment confirmed! Admin will verify shortly.");
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === paymentId ? { ...p, doctor_confirmed: true, status: "doctor_confirmed" } : p
-        )
-      );
-    }
-  };
-
   if (doctor && !doctor.is_approved) {
     return (
       <div className="container py-20 text-center">
@@ -81,8 +59,6 @@ export default function DoctorDashboard() {
       </div>
     );
   }
-
-  const pendingPayments = payments.filter((p) => p.status === "submitted" && !p.doctor_confirmed);
 
   return (
     <div className="container py-8">
@@ -191,51 +167,6 @@ export default function DoctorDashboard() {
                     <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
                       Complete
                     </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Confirmations */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-display text-lg flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-success" /> Payment Confirmations
-              {pendingPayments.length > 0 && (
-                <Badge className="bg-destructive text-destructive-foreground ml-2">{pendingPayments.length} pending</Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {payments.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No payments yet</p>
-            ) : (
-              <div className="space-y-3">
-                {payments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Appointment Payment • ${p.amount}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(p.created_at).toLocaleDateString()} • Status: {p.status}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {p.doctor_confirmed ? (
-                        <Badge className="bg-success/10 text-success">
-                          <CheckCircle className="h-3 w-3 mr-1" /> Confirmed
-                        </Badge>
-                      ) : p.status === "submitted" ? (
-                        <Button size="sm" onClick={() => confirmPayment(p.id)}>
-                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Confirm Payment
-                        </Button>
-                      ) : (
-                        <Badge variant="secondary">{p.status}</Badge>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>

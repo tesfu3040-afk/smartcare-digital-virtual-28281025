@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Calendar,
   FileText,
@@ -15,6 +16,9 @@ import {
   Clock,
   DollarSign,
   Image,
+  Key,
+  CheckCircle,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +32,8 @@ export default function PatientDashboard() {
   const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetAppt, setUploadTargetAppt] = useState<any>(null);
+  const [consultationCodeInput, setConsultationCodeInput] = useState<Record<string, string>>({});
+  const [verifyingCode, setVerifyingCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -62,7 +68,6 @@ export default function PatientDashboard() {
         .from("payment-screenshots")
         .getPublicUrl(filePath);
 
-      // Check if payment record exists for this appointment
       const existingPayment = payments.find((p) => p.appointment_id === appointment.id);
       if (existingPayment) {
         await supabase.from("payments").update({
@@ -80,8 +85,7 @@ export default function PatientDashboard() {
         });
       }
 
-      toast.success("Payment screenshot uploaded!");
-      // Refresh payments
+      toast.success("Payment screenshot uploaded! Admin will verify shortly.");
       const { data } = await supabase.from("payments").select("*").eq("patient_id", user.id);
       setPayments(data ?? []);
     } catch (err: any) {
@@ -89,6 +93,56 @@ export default function PatientDashboard() {
     } finally {
       setUploading(null);
       setUploadTargetAppt(null);
+    }
+  };
+
+  const handleVerifyConsultationCode = async (appointment: any) => {
+    const code = consultationCodeInput[appointment.id]?.trim();
+    if (!code) {
+      toast.error("Please enter the consultation code");
+      return;
+    }
+    setVerifyingCode(appointment.id);
+    try {
+      // Check if code matches and hasn't been used
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("consultation_code, consultation_code_used, appointment_date, appointment_time")
+        .eq("id", appointment.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data || (data as any).consultation_code !== code) {
+        toast.error("Invalid consultation code");
+        return;
+      }
+      if ((data as any).consultation_code_used) {
+        toast.error("This consultation code has already been used");
+        return;
+      }
+
+      // Check if appointment time has passed
+      const apptDateTime = new Date(`${data.appointment_date}T${data.appointment_time}`);
+      if (new Date() > apptDateTime) {
+        toast.error("This consultation code has expired (appointment time has passed)");
+        return;
+      }
+
+      // Mark code as used
+      await supabase
+        .from("appointments")
+        .update({ consultation_code_used: true } as any)
+        .eq("id", appointment.id);
+
+      toast.success("Consultation unlocked! You can now chat or video call with your doctor.");
+      setAppointments((prev) =>
+        prev.map((a) => a.id === appointment.id ? { ...a, consultation_code_used: true } : a)
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Verification failed");
+    } finally {
+      setVerifyingCode(null);
     }
   };
 
@@ -156,7 +210,7 @@ export default function PatientDashboard() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Upcoming appointments with payment upload */}
+        {/* Upcoming appointments with payment & consultation code */}
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-lg flex items-center gap-2">
@@ -170,6 +224,9 @@ export default function PatientDashboard() {
               <div className="space-y-3">
                 {upcomingAppointments.map((a) => {
                   const payment = getPaymentForAppt(a.id);
+                  const paymentVerified = payment?.status === "verified";
+                  const consultationUnlocked = a.consultation_code_used;
+
                   return (
                     <div key={a.id} className="p-3 rounded-lg border space-y-2">
                       <div className="flex items-center justify-between">
@@ -192,7 +249,8 @@ export default function PatientDashboard() {
                           {a.status}
                         </Badge>
                       </div>
-                      {/* Payment section */}
+
+                      {/* Step 1: Payment upload */}
                       <div className="flex items-center gap-2 pt-1">
                         {payment ? (
                           <Badge className={
@@ -217,6 +275,48 @@ export default function PatientDashboard() {
                           </Button>
                         )}
                       </div>
+
+                      {/* Step 2: Enter consultation code (only after payment verified) */}
+                      {paymentVerified && !consultationUnlocked && (
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                          <p className="text-xs font-medium text-primary flex items-center gap-1">
+                            <Key className="h-3.5 w-3.5" /> Enter your consultation code to unlock chat/video
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="e.g. SC-ABCD1234"
+                              value={consultationCodeInput[a.id] || ""}
+                              onChange={(e) => setConsultationCodeInput((prev) => ({ ...prev, [a.id]: e.target.value }))}
+                              className="text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              disabled={verifyingCode === a.id}
+                              onClick={() => handleVerifyConsultationCode(a)}
+                            >
+                              {verifyingCode === a.id ? "..." : "Verify"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Step 3: Consultation unlocked */}
+                      {consultationUnlocked && (
+                        <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                          <p className="text-xs font-medium text-success flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" /> Consultation unlocked — you can now chat or video call with your doctor
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Locked state */}
+                      {!paymentVerified && !consultationUnlocked && payment && payment.status !== "rejected" && (
+                        <div className="p-2 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Lock className="h-3 w-3" /> Waiting for admin to verify payment before you can access consultation
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
