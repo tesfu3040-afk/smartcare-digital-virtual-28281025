@@ -41,16 +41,26 @@ export default function Doctors() {
 
   useEffect(() => {
     const fetchDoctors = async () => {
-      const { data } = await supabase
+      const { data: doctorsData } = await supabase
         .from("doctors")
-        .select("*, profiles!doctors_user_id_fkey(first_name, last_name, avatar_url)")
+        .select("*")
         .eq("is_approved", true);
 
-      if (data) {
+      if (doctorsData && doctorsData.length > 0) {
+        const userIds = doctorsData.map((d) => d.user_id);
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, first_name, last_name, avatar_url")
+          .in("user_id", userIds);
+
+        const profileMap = new Map(
+          (profilesData || []).map((p) => [p.user_id, p])
+        );
+
         setDoctors(
-          data.map((d: any) => ({
+          doctorsData.map((d: any) => ({
             ...d,
-            profile: d.profiles,
+            profile: profileMap.get(d.user_id) || null,
           }))
         );
       }
