@@ -39,6 +39,7 @@ import {
   Upload,
   Trash2,
   Mail,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,6 +59,7 @@ export default function AdminDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Add doctor form state
   const [addDoctorOpen, setAddDoctorOpen] = useState(false);
@@ -100,7 +102,6 @@ export default function AdminDashboard() {
         supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
-      // Manually join doctor profiles
       const doctorsList = docRes.data ?? [];
       const allProfiles = profRes.data ?? [];
       const doctorsWithProfiles = doctorsList.map((d: any) => {
@@ -155,8 +156,6 @@ export default function AdminDashboard() {
         },
       });
 
-      // supabase.functions.invoke returns { data, error }
-      // For 2xx responses, data contains the response body and error is null
       const result = res.data;
       if (res.error) throw new Error(res.error.message || "Failed to add doctor");
       if (result?.error) throw new Error(result.error);
@@ -166,7 +165,6 @@ export default function AdminDashboard() {
       setNewDoctor({ email: "", password: "", first_name: "", last_name: "", specialty: "", custom_specialty: "", experience_years: 0, consultation_fee: 0, bio: "" });
       setUseCustomSpecialty(false);
 
-      // Refresh doctors list
       const [docRes, profRes] = await Promise.all([
         supabase.from("doctors").select("*"),
         supabase.from("profiles").select("*").limit(50),
@@ -227,7 +225,6 @@ export default function AdminDashboard() {
 
     if (verified && payment) {
       consultationCode = generateConsultationCode();
-      // Store consultation code on the appointment
       const { error: codeError } = await supabase
         .from("appointments")
         .update({ consultation_code: consultationCode } as any)
@@ -303,6 +300,18 @@ export default function AdminDashboard() {
           e.target.value = "";
         }}
       />
+
+      {/* Image Preview Dialog */}
+      {previewImage && (
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Payment Screenshot</DialogTitle>
+            </DialogHeader>
+            <img src={previewImage} alt="Payment screenshot" className="w-full rounded-lg" />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -487,6 +496,7 @@ export default function AdminDashboard() {
               payments.map((p) => {
                 const patient = profiles.find((pr) => pr.user_id === p.patient_id);
                 const doctor = doctors.find((d) => d.user_id === p.doctor_id);
+                const appointment = appointments.find((a) => a.id === p.appointment_id);
                 return (
                   <Card key={p.id}>
                     <CardContent className="p-4">
@@ -500,7 +510,7 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                      <Badge className={
+                          <Badge className={
                             p.status === "verified" ? "bg-success/10 text-success" :
                             p.status === "rejected" ? "bg-destructive/10 text-destructive" :
                             "bg-warning/10 text-warning"
@@ -509,11 +519,33 @@ export default function AdminDashboard() {
                           </Badge>
                         </div>
                       </div>
+                      {/* Screenshot preview */}
                       {p.screenshot_url && (
                         <div className="mb-3">
-                          <a href={p.screenshot_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
-                            <Image className="h-4 w-4" /> View Payment Screenshot
-                          </a>
+                          <button
+                            onClick={() => setPreviewImage(p.screenshot_url)}
+                            className="block rounded-lg overflow-hidden border hover:border-primary transition-colors cursor-pointer"
+                          >
+                            <img
+                              src={p.screenshot_url}
+                              alt="Payment screenshot"
+                              className="w-full max-h-40 object-contain bg-muted"
+                            />
+                          </button>
+                          <button
+                            onClick={() => setPreviewImage(p.screenshot_url)}
+                            className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
+                          >
+                            <Eye className="h-4 w-4" /> View Full Screenshot
+                          </button>
+                        </div>
+                      )}
+                      {/* Consultation code display */}
+                      {p.status === "verified" && appointment?.consultation_code && (
+                        <div className="mb-3 p-2 rounded-lg bg-success/5 border border-success/20">
+                          <p className="text-xs text-success font-medium">
+                            Consultation Code: <span className="font-mono text-sm">{appointment.consultation_code}</span>
+                          </p>
                         </div>
                       )}
                       {p.status === "submitted" && (

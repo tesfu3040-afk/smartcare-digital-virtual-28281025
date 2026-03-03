@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Video, MessageSquare, DollarSign, ArrowLeft, Landmark, Info } from "lucide-react";
+import { Video, MessageSquare, DollarSign, ArrowLeft, Landmark, Info, Image, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import clinicalBg from "@/assets/clinical-bg.png";
 
@@ -26,6 +26,9 @@ export default function BookAppointment() {
   const [type, setType] = useState("video");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!doctorId) return;
@@ -48,6 +51,17 @@ export default function BookAppointment() {
     fetchDoctor();
   }, [doctorId]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setScreenshotFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setScreenshotPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !doctorId) {
@@ -55,21 +69,51 @@ export default function BookAppointment() {
       navigate("/auth");
       return;
     }
-    setLoading(true);
-    const { error } = await supabase.from("appointments").insert({
-      patient_id: user.id,
-      doctor_id: doctorId,
-      appointment_date: date,
-      appointment_time: time,
-      consultation_type: type,
-      notes: notes.trim(),
-    });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Appointment booked! Please transfer the fee and upload your receipt from your dashboard.");
-      navigate("/patient-dashboard");
+    if (!screenshotFile) {
+      toast.error("Please upload your payment screenshot before booking");
+      return;
     }
-    setLoading(false);
+    setLoading(true);
+    try {
+      // 1. Create appointment
+      const { data: apptData, error: apptError } = await supabase.from("appointments").insert({
+        patient_id: user.id,
+        doctor_id: doctorId,
+        appointment_date: date,
+        appointment_time: time,
+        consultation_type: type,
+        notes: notes.trim(),
+      }).select("id").single();
+      if (apptError) throw apptError;
+
+      // 2. Upload screenshot
+      const filePath = `${user.id}/${apptData.id}_${Date.now()}.${screenshotFile.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from("payment-screenshots")
+        .upload(filePath, screenshotFile);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("payment-screenshots")
+        .getPublicUrl(filePath);
+
+      // 3. Create payment record
+      await supabase.from("payments").insert({
+        appointment_id: apptData.id,
+        patient_id: user.id,
+        doctor_id: doctorId,
+        amount: doctor.consultation_fee || 0,
+        screenshot_url: urlData.publicUrl,
+        status: "submitted",
+      });
+
+      toast.success("Appointment booked with payment! Admin will verify and send your consultation code.");
+      navigate("/patient-dashboard");
+    } catch (err: any) {
+      toast.error(err.message || "Booking failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!doctor) {
@@ -136,7 +180,7 @@ export default function BookAppointment() {
               </div>
               <div className="flex items-start gap-1.5 text-xs text-muted-foreground mt-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <span>After booking, upload your payment receipt from your dashboard.</span>
+                <span>Transfer the consultation fee and upload the screenshot below before booking.</span>
               </div>
             </div>
           )}
@@ -172,8 +216,45 @@ export default function BookAppointment() {
               <Label>Notes (optional)</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe your symptoms or reason for visit..." maxLength={500} rows={3} />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Booking..." : "Confirm Booking"}
+
+            {/* Payment Screenshot Upload */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Image className="h-4 w-4" /> Payment Screenshot *
+              </Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              {screenshotPreview ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-lg overflow-hidden border">
+                    <img src={screenshotPreview} alt="Payment screenshot" className="w-full max-h-48 object-contain bg-muted" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-success/10 text-success">
+                      <CheckCircle className="h-3 w-3 mr-1" /> Screenshot attached
+                    </Badge>
+                    <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                      Change
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button type="button" variant="outline" className="w-full h-20 border-dashed" onClick={() => fileInputRef.current?.click()}>
+                  <div className="flex flex-col items-center gap-1">
+                    <Image className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Click to upload payment screenshot</span>
+                  </div>
+                </Button>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading || !screenshotFile}>
+              {loading ? "Booking..." : "Confirm Booking & Submit Payment"}
             </Button>
           </form>
         </CardContent>
