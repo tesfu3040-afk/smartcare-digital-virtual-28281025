@@ -12,13 +12,16 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
+  Lock,
 } from "lucide-react";
+import ConsultationChat from "@/components/ConsultationChat";
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [doctor, setDoctor] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -30,7 +33,9 @@ export default function DoctorDashboard() {
       ]);
       setProfile(profileRes.data);
       setDoctor(doctorRes.data);
-      setAppointments(apptRes.data ?? []);
+      // Only show appointments where patient has entered consultation code
+      const allAppts = apptRes.data ?? [];
+      setAppointments(allAppts.filter((a: any) => a.consultation_code_used === true));
     };
     fetchData();
   }, [user]);
@@ -56,6 +61,17 @@ export default function DoctorDashboard() {
         <p className="mt-2 text-muted-foreground max-w-md mx-auto">
           Your doctor account is being reviewed by our admin team. You'll be notified once approved.
         </p>
+      </div>
+    );
+  }
+
+  if (selectedChat) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedChat(null)}>
+          ← Back to Dashboard
+        </Button>
+        <ConsultationChat appointment={selectedChat} currentUserId={user!.id} />
       </div>
     );
   }
@@ -92,18 +108,25 @@ export default function DoctorDashboard() {
         ))}
       </div>
 
+      {appointments.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No appointments yet. Appointments will appear here once patients enter their consultation code.</p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Pending appointments */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" /> Pending Appointments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pending.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No pending appointments</p>
-            ) : (
+        {pending.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-warning" /> Pending Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 {pending.map((a) => (
                   <div key={a.id} className="p-3 rounded-lg border space-y-2">
@@ -131,48 +154,53 @@ export default function DoctorDashboard() {
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Confirmed appointments */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" /> Confirmed Appointments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {confirmed.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No confirmed appointments</p>
-            ) : (
+        {confirmed.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" /> Confirmed Appointments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 {confirmed.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {a.consultation_type === "video" ? (
-                          <Video className="h-5 w-5 text-primary" />
-                        ) : (
-                          <MessageSquare className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {a.appointment_date} at {a.appointment_time}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">{a.consultation_type}</p>
+                  <div key={a.id} className="p-3 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          {a.consultation_type === "video" ? (
+                            <Video className="h-5 w-5 text-primary" />
+                          ) : (
+                            <MessageSquare className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {a.appointment_date} at {a.appointment_time}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">{a.consultation_type}</p>
+                        </div>
                       </div>
                     </div>
-                    <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
-                      Complete
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
+                        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
+                      </Button>
+                      <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
+                        Complete
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

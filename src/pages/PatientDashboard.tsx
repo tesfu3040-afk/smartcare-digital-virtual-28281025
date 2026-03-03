@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,12 +15,12 @@ import {
   MessageSquare,
   Clock,
   DollarSign,
-  Image,
   Key,
   CheckCircle,
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import ConsultationChat from "@/components/ConsultationChat";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -29,11 +29,9 @@ export default function PatientDashboard() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
-  const [uploading, setUploading] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTargetAppt, setUploadTargetAppt] = useState<any>(null);
   const [consultationCodeInput, setConsultationCodeInput] = useState<Record<string, string>>({});
   const [verifyingCode, setVerifyingCode] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -54,48 +52,6 @@ export default function PatientDashboard() {
     fetchData();
   }, [user]);
 
-  const handleUploadScreenshot = async (file: File, appointment: any) => {
-    if (!user) return;
-    setUploading(appointment.id);
-    try {
-      const filePath = `${user.id}/${appointment.id}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from("payment-screenshots")
-        .upload(filePath, file);
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("payment-screenshots")
-        .getPublicUrl(filePath);
-
-      const existingPayment = payments.find((p) => p.appointment_id === appointment.id);
-      if (existingPayment) {
-        await supabase.from("payments").update({
-          screenshot_url: urlData.publicUrl,
-          status: "submitted",
-        }).eq("id", existingPayment.id);
-      } else {
-        await supabase.from("payments").insert({
-          appointment_id: appointment.id,
-          patient_id: user.id,
-          doctor_id: appointment.doctor_id,
-          amount: 0,
-          screenshot_url: urlData.publicUrl,
-          status: "submitted",
-        });
-      }
-
-      toast.success("Payment screenshot uploaded! Admin will verify shortly.");
-      const { data } = await supabase.from("payments").select("*").eq("patient_id", user.id);
-      setPayments(data ?? []);
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed");
-    } finally {
-      setUploading(null);
-      setUploadTargetAppt(null);
-    }
-  };
-
   const handleVerifyConsultationCode = async (appointment: any) => {
     const code = consultationCodeInput[appointment.id]?.trim();
     if (!code) {
@@ -104,7 +60,6 @@ export default function PatientDashboard() {
     }
     setVerifyingCode(appointment.id);
     try {
-      // Check if code matches and hasn't been used
       const { data, error } = await supabase
         .from("appointments")
         .select("consultation_code, consultation_code_used, appointment_date, appointment_time")
@@ -122,22 +77,20 @@ export default function PatientDashboard() {
         return;
       }
 
-      // Check if appointment time has passed
       const apptDateTime = new Date(`${data.appointment_date}T${data.appointment_time}`);
       if (new Date() > apptDateTime) {
         toast.error("This consultation code has expired (appointment time has passed)");
         return;
       }
 
-      // Mark code as used
       await supabase
         .from("appointments")
-        .update({ consultation_code_used: true } as any)
+        .update({ consultation_code_used: true, status: "confirmed" } as any)
         .eq("id", appointment.id);
 
-      toast.success("Consultation unlocked! You can now chat or video call with your doctor.");
+      toast.success("Consultation unlocked! You can now chat with your doctor.");
       setAppointments((prev) =>
-        prev.map((a) => a.id === appointment.id ? { ...a, consultation_code_used: true } : a)
+        prev.map((a) => a.id === appointment.id ? { ...a, consultation_code_used: true, status: "confirmed" } : a)
       );
     } catch (err: any) {
       toast.error(err.message || "Verification failed");
@@ -159,22 +112,19 @@ export default function PatientDashboard() {
 
   const getPaymentForAppt = (apptId: string) => payments.find((p) => p.appointment_id === apptId);
 
+  if (selectedChat) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedChat(null)}>
+          ← Back to Dashboard
+        </Button>
+        <ConsultationChat appointment={selectedChat} currentUserId={user!.id} />
+      </div>
+    );
+  }
+
   return (
     <div className="container py-8">
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file && uploadTargetAppt) {
-            handleUploadScreenshot(file, uploadTargetAppt);
-          }
-          e.target.value = "";
-        }}
-      />
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">
@@ -210,7 +160,7 @@ export default function PatientDashboard() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Upcoming appointments with payment & consultation code */}
+        {/* Upcoming appointments with consultation code */}
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-lg flex items-center gap-2">
@@ -250,9 +200,9 @@ export default function PatientDashboard() {
                         </Badge>
                       </div>
 
-                      {/* Step 1: Payment upload */}
-                      <div className="flex items-center gap-2 pt-1">
-                        {payment ? (
+                      {/* Payment status */}
+                      {payment && (
+                        <div className="flex items-center gap-2 pt-1">
                           <Badge className={
                             payment.status === "verified" ? "bg-success/10 text-success" :
                             payment.status === "rejected" ? "bg-destructive/10 text-destructive" :
@@ -260,27 +210,14 @@ export default function PatientDashboard() {
                           }>
                             <DollarSign className="h-3 w-3 mr-1" /> Payment: {payment.status}
                           </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={uploading === a.id}
-                            onClick={() => {
-                              setUploadTargetAppt(a);
-                              fileInputRef.current?.click();
-                            }}
-                          >
-                            <Image className="h-3.5 w-3.5 mr-1" />
-                            {uploading === a.id ? "Uploading..." : "Upload Payment Screenshot"}
-                          </Button>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
-                      {/* Step 2: Enter consultation code (only after payment verified) */}
+                      {/* Enter consultation code (only after payment verified) */}
                       {paymentVerified && !consultationUnlocked && (
                         <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
                           <p className="text-xs font-medium text-primary flex items-center gap-1">
-                            <Key className="h-3.5 w-3.5" /> Enter your consultation code to unlock chat/video
+                            <Key className="h-3.5 w-3.5" /> Enter your consultation code to unlock chat
                           </p>
                           <div className="flex gap-2">
                             <Input
@@ -300,12 +237,15 @@ export default function PatientDashboard() {
                         </div>
                       )}
 
-                      {/* Step 3: Consultation unlocked */}
+                      {/* Consultation unlocked - show chat button */}
                       {consultationUnlocked && (
-                        <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                        <div className="p-3 rounded-lg bg-success/5 border border-success/20 space-y-2">
                           <p className="text-xs font-medium text-success flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" /> Consultation unlocked — you can now chat or video call with your doctor
+                            <CheckCircle className="h-3.5 w-3.5" /> Consultation unlocked
                           </p>
+                          <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
+                            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
+                          </Button>
                         </div>
                       )}
 
@@ -313,7 +253,7 @@ export default function PatientDashboard() {
                       {!paymentVerified && !consultationUnlocked && payment && payment.status !== "rejected" && (
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Lock className="h-3 w-3" /> Waiting for admin to verify payment before you can access consultation
+                            <Lock className="h-3 w-3" /> Waiting for admin to verify payment
                           </p>
                         </div>
                       )}
