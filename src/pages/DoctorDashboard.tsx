@@ -15,6 +15,7 @@ import {
   Lock,
 } from "lucide-react";
 import ConsultationChat from "@/components/ConsultationChat";
+import VideoCall from "@/components/VideoCall";
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function DoctorDashboard() {
   const [doctor, setDoctor] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;

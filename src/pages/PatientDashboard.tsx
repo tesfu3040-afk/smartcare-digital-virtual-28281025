@@ -23,6 +23,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
+import VideoCall from "@/components/VideoCall";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export default function PatientDashboard() {
   const [consultationCodeInput, setConsultationCodeInput] = useState<Record<string, string>>({});
   const [verifyingCode, setVerifyingCode] = useState<string | null>(null);
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
