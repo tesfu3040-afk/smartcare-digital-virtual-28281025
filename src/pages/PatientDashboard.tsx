@@ -18,7 +18,9 @@ import {
   Key,
   CheckCircle,
   Lock,
+  Bell,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
 
