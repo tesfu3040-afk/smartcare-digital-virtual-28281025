@@ -67,6 +67,21 @@ export default function DoctorDashboard() {
     );
   }
 
+  if (selectedVideo) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
+          ← Back to Dashboard
+        </Button>
+        <VideoCall
+          appointment={selectedVideo}
+          userName={profile ? `Dr. ${profile.first_name} ${profile.last_name || ""}`.trim() : "Doctor"}
+          onClose={() => setSelectedVideo(null)}
+        />
+      </div>
+    );
+  }
+
   if (selectedChat) {
     return (
       <div className="container py-8">
