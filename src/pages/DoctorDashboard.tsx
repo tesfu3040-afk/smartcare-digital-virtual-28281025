@@ -209,6 +209,9 @@ export default function DoctorDashboard() {
                       <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
                         <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
                       </Button>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedVideo(a)}>
+                        <Video className="h-3.5 w-3.5 mr-1" /> Video Call
+                      </Button>
                       <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Complete
                       </Button>
