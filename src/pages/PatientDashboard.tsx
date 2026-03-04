@@ -299,11 +299,16 @@ export default function PatientDashboard() {
                       {consultationUnlocked && a.status === "confirmed" && (
                         <div className="p-3 rounded-lg bg-success/5 border border-success/20 space-y-2">
                           <p className="text-xs font-medium text-success flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat is now available
+                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat & Video are now available
                           </p>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
-                            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
+                            </Button>
+                            <Button size="sm" onClick={() => setSelectedVideo(a)}>
+                              <Video className="h-3.5 w-3.5 mr-1" /> Video Call
+                            </Button>
+                          </div>
                         </div>
                       )}
 
