@@ -18,7 +18,9 @@ import {
   Key,
   CheckCircle,
   Lock,
+  Bell,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
 
@@ -103,6 +105,11 @@ export default function PatientDashboard() {
     (a) => a.status === "pending" || a.status === "confirmed"
   );
 
+  const appointmentsWithNewCode = upcomingAppointments.filter((a) => {
+    const payment = payments.find((p) => p.appointment_id === a.id);
+    return payment?.status === "verified" && a.consultation_code && !a.consultation_code_used;
+  });
+
   const statusColor: Record<string, string> = {
     pending: "bg-warning/10 text-warning",
     confirmed: "bg-success/10 text-success",
@@ -125,6 +132,20 @@ export default function PatientDashboard() {
 
   return (
     <div className="container py-8">
+      {/* Notification alert for new consultation codes */}
+      {appointmentsWithNewCode.length > 0 && (
+        <Alert className="mb-6 border-primary/30 bg-primary/5">
+          <Bell className="h-5 w-5 text-primary" />
+          <AlertTitle className="font-display font-semibold text-primary">
+            New Consultation Code{appointmentsWithNewCode.length > 1 ? "s" : ""} Available!
+          </AlertTitle>
+          <AlertDescription className="text-sm text-muted-foreground">
+            You have {appointmentsWithNewCode.length} appointment{appointmentsWithNewCode.length > 1 ? "s" : ""} with a consultation code ready.
+            Enter {appointmentsWithNewCode.length > 1 ? "them" : "it"} below to connect with your doctor.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">
