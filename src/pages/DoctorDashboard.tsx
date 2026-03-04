@@ -158,7 +158,7 @@ export default function DoctorDashboard() {
           </Card>
         )}
 
-        {/* Confirmed appointments */}
+        {/* Confirmed appointments - chat available */}
         {confirmed.length > 0 && (
           <Card>
             <CardHeader>
@@ -186,13 +186,14 @@ export default function DoctorDashboard() {
                           <p className="text-xs text-muted-foreground capitalize">{a.consultation_type}</p>
                         </div>
                       </div>
+                      <Badge className="bg-success/10 text-success">Confirmed</Badge>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
-                        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
+                        <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
                       </Button>
                       <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
-                        Complete
+                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Complete
                       </Button>
                     </div>
                   </div>
