@@ -15,6 +15,7 @@ import {
   Lock,
 } from "lucide-react";
 import ConsultationChat from "@/components/ConsultationChat";
+import VideoCall from "@/components/VideoCall";
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function DoctorDashboard() {
   const [doctor, setDoctor] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +63,21 @@ export default function DoctorDashboard() {
         <p className="mt-2 text-muted-foreground max-w-md mx-auto">
           Your doctor account is being reviewed by our admin team. You'll be notified once approved.
         </p>
+      </div>
+    );
+  }
+
+  if (selectedVideo) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
+          ← Back to Dashboard
+        </Button>
+        <VideoCall
+          appointment={selectedVideo}
+          userName={profile ? `Dr. ${profile.first_name} ${profile.last_name || ""}`.trim() : "Doctor"}
+          onClose={() => setSelectedVideo(null)}
+        />
       </div>
     );
   }
@@ -191,6 +208,9 @@ export default function DoctorDashboard() {
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
                         <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedVideo(a)}>
+                        <Video className="h-3.5 w-3.5 mr-1" /> Video Call
                       </Button>
                       <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Complete

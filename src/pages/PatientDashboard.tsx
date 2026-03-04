@@ -23,6 +23,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
+import VideoCall from "@/components/VideoCall";
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -34,6 +35,7 @@ export default function PatientDashboard() {
   const [consultationCodeInput, setConsultationCodeInput] = useState<Record<string, string>>({});
   const [verifyingCode, setVerifyingCode] = useState<string | null>(null);
   const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -118,6 +120,21 @@ export default function PatientDashboard() {
   };
 
   const getPaymentForAppt = (apptId: string) => payments.find((p) => p.appointment_id === apptId);
+
+  if (selectedVideo) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
+          ← Back to Dashboard
+        </Button>
+        <VideoCall
+          appointment={selectedVideo}
+          userName={profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Patient"}
+          onClose={() => setSelectedVideo(null)}
+        />
+      </div>
+    );
+  }
 
   if (selectedChat) {
     return (
@@ -282,11 +299,16 @@ export default function PatientDashboard() {
                       {consultationUnlocked && a.status === "confirmed" && (
                         <div className="p-3 rounded-lg bg-success/5 border border-success/20 space-y-2">
                           <p className="text-xs font-medium text-success flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat is now available
+                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat & Video are now available
                           </p>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
-                            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
+                            </Button>
+                            <Button size="sm" onClick={() => setSelectedVideo(a)}>
+                              <Video className="h-3.5 w-3.5 mr-1" /> Video Call
+                            </Button>
+                          </div>
                         </div>
                       )}
 
