@@ -213,15 +213,17 @@ export default function PatientDashboard() {
                         </div>
                       )}
 
-                      {/* Enter consultation code (only after payment verified) */}
-                      {paymentVerified && !consultationUnlocked && (
+                      {/* Show consultation code after payment verified */}
+                      {paymentVerified && !consultationUnlocked && a.consultation_code && (
                         <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
                           <p className="text-xs font-medium text-primary flex items-center gap-1">
-                            <Key className="h-3.5 w-3.5" /> Enter your consultation code to unlock chat
+                            <Key className="h-3.5 w-3.5" /> Your consultation code is:
                           </p>
+                          <p className="font-mono text-lg font-bold text-primary tracking-wider">{a.consultation_code}</p>
+                          <p className="text-xs text-muted-foreground">Enter this code below to connect with your doctor</p>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="e.g. SC-ABCD1234"
+                              placeholder="Enter consultation code"
                               value={consultationCodeInput[a.id] || ""}
                               onChange={(e) => setConsultationCodeInput((prev) => ({ ...prev, [a.id]: e.target.value }))}
                               className="text-sm"
@@ -237,11 +239,29 @@ export default function PatientDashboard() {
                         </div>
                       )}
 
-                      {/* Consultation unlocked - show chat button */}
-                      {consultationUnlocked && (
+                      {/* Waiting for payment verification - no code yet */}
+                      {paymentVerified && !consultationUnlocked && !a.consultation_code && (
+                        <div className="p-2 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Processing... please wait
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Code entered, waiting for doctor confirmation */}
+                      {consultationUnlocked && a.status !== "confirmed" && (
+                        <div className="p-3 rounded-lg bg-warning/5 border border-warning/20 space-y-2">
+                          <p className="text-xs font-medium text-warning flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" /> Code verified! Waiting for doctor to confirm your appointment...
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Doctor confirmed - chat unlocked */}
+                      {consultationUnlocked && a.status === "confirmed" && (
                         <div className="p-3 rounded-lg bg-success/5 border border-success/20 space-y-2">
                           <p className="text-xs font-medium text-success flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" /> Consultation unlocked
+                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat is now available
                           </p>
                           <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
                             <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
