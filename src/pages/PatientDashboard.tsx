@@ -121,6 +121,21 @@ export default function PatientDashboard() {
 
   const getPaymentForAppt = (apptId: string) => payments.find((p) => p.appointment_id === apptId);
 
+  if (selectedVideo) {
+    return (
+      <div className="container py-8">
+        <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
+          ← Back to Dashboard
+        </Button>
+        <VideoCall
+          appointment={selectedVideo}
+          userName={profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Patient"}
+          onClose={() => setSelectedVideo(null)}
+        />
+      </div>
+    );
+  }
+
   if (selectedChat) {
     return (
       <div className="container py-8">
