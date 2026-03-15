@@ -40,6 +40,8 @@ import {
   Trash2,
   Mail,
   Eye,
+  ArrowLeft,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +53,8 @@ const PRESET_SPECIALTIES = [
   "Surgery", "Radiology", "Pathology",
 ];
 
+type StatsFilter = "users" | "doctors" | "appointments" | "completed" | "pending" | "confirmed" | null;
+
 export default function AdminDashboard() {
   const { role } = useAuth();
   const { settings, updateSetting } = useAppSettings();
@@ -60,6 +64,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [statsFilter, setStatsFilter] = useState<StatsFilter>(null);
 
   // Add doctor form state
   const [addDoctorOpen, setAddDoctorOpen] = useState(false);
@@ -282,8 +287,113 @@ export default function AdminDashboard() {
 
   const pendingDoctors = doctors.filter((d) => !d.is_approved);
   const completedAppts = appointments.filter((a) => a.status === "completed");
+  const pendingAppts = appointments.filter((a) => a.status === "pending");
+  const confirmedAppts = appointments.filter((a) => a.status === "confirmed");
   const pendingPayments = payments.filter((p) => p.status === "submitted");
   const unreadMessages = contactMessages.filter((m: any) => !m.is_read);
+
+  const statsCards = [
+    { icon: Users, label: "Total Users", value: profiles.length, color: "text-primary", filter: "users" as StatsFilter },
+    { icon: Stethoscope, label: "Doctors", value: doctors.length, color: "text-secondary", filter: "doctors" as StatsFilter },
+    { icon: Calendar, label: "Appointments", value: appointments.length, color: "text-accent", filter: "appointments" as StatsFilter },
+    { icon: TrendingUp, label: "Completed", value: completedAppts.length, color: "text-success", filter: "completed" as StatsFilter },
+  ];
+
+  // Render the filtered list view
+  const renderFilteredList = () => {
+    const getFilteredItems = () => {
+      switch (statsFilter) {
+        case "users":
+          return { title: "All Users", items: profiles };
+        case "doctors":
+          return { title: "All Doctors", items: doctors };
+        case "appointments":
+          return { title: "All Appointments", items: appointments };
+        case "completed":
+          return { title: "Completed Appointments", items: completedAppts };
+        case "pending":
+          return { title: "Pending Appointments", items: pendingAppts };
+        case "confirmed":
+          return { title: "Confirmed Appointments", items: confirmedAppts };
+        default:
+          return { title: "", items: [] };
+      }
+    };
+
+    const { title, items } = getFilteredItems();
+
+    return (
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setStatsFilter(null)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <CardTitle className="font-display text-lg">{title} ({items.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {items.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No items found</p>
+            ) : (
+              items.map((item: any) => {
+                if (statsFilter === "users") {
+                  return (
+                    <div key={item.id} className="p-3 rounded-lg border flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display font-bold text-sm text-muted-foreground">
+                        {item.first_name?.[0] ?? "U"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{item.first_name} {item.last_name}</p>
+                        <p className="text-xs text-muted-foreground">{item.email}</p>
+                      </div>
+                    </div>
+                  );
+                }
+                if (statsFilter === "doctors") {
+                  return (
+                    <div key={item.id} className="p-3 rounded-lg border flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {item.photo_url ? (
+                          <img src={item.photo_url} alt="Doctor" className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm">
+                            {item.profiles?.first_name?.[0] ?? "D"}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Dr. {item.profiles?.first_name} {item.profiles?.last_name}</p>
+                          <p className="text-xs text-muted-foreground">{item.specialty}</p>
+                        </div>
+                      </div>
+                      <Badge className={item.is_approved ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>
+                        {item.is_approved ? "Approved" : "Pending"}
+                      </Badge>
+                    </div>
+                  );
+                }
+                // Appointment items
+                const patient = profiles.find((p) => p.user_id === item.patient_id);
+                const doc = doctors.find((d) => d.user_id === item.doctor_id);
+                return (
+                  <div key={item.id} className="p-3 rounded-lg border flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {patient?.first_name} {patient?.last_name} → Dr. {doc?.profiles?.first_name} {doc?.profiles?.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.appointment_date} at {item.appointment_time} • {item.consultation_type}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="capitalize">{item.status}</Badge>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="container py-8">
@@ -392,13 +502,12 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { icon: Users, label: "Total Users", value: profiles.length, color: "text-primary" },
-          { icon: Stethoscope, label: "Doctors", value: doctors.length, color: "text-secondary" },
-          { icon: Calendar, label: "Appointments", value: appointments.length, color: "text-accent" },
-          { icon: TrendingUp, label: "Completed", value: completedAppts.length, color: "text-success" },
-        ].map((s) => (
-          <Card key={s.label}>
+        {statsCards.map((s) => (
+          <Card
+            key={s.label}
+            className={`cursor-pointer transition-all hover:ring-2 hover:ring-primary/30 ${statsFilter === s.filter ? "ring-2 ring-primary" : ""}`}
+            onClick={() => setStatsFilter(statsFilter === s.filter ? null : s.filter)}
+          >
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`h-10 w-10 rounded-lg bg-muted flex items-center justify-center ${s.color}`}>
                 <s.icon className="h-5 w-5" />
@@ -412,292 +521,295 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <Tabs defaultValue="doctors">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="doctors">
-            Doctors {pendingDoctors.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingDoctors.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="payments">
-            Payments {pendingPayments.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingPayments.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="messages">
-            Messages {unreadMessages.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{unreadMessages.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="appointments">Appointments</TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-1" /> Settings
-          </TabsTrigger>
-        </TabsList>
+      {/* Show filtered list when a stat card is clicked */}
+      {statsFilter && renderFilteredList()}
 
-        {/* Doctors Tab */}
-        <TabsContent value="doctors" className="mt-6">
-          <div className="space-y-3">
-            {doctors.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No doctors registered yet</p>
-            ) : (
-              doctors.map((d) => (
-                <Card key={d.id}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {d.photo_url ? (
-                        <img src={d.photo_url} alt="Doctor" className="h-12 w-12 rounded-full object-cover" />
-                      ) : (
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold">
-                          {d.profiles?.first_name?.[0] ?? "D"}
+      {!statsFilter && (
+        <Tabs defaultValue="doctors">
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="doctors">
+              Doctors {pendingDoctors.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingDoctors.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="payments">
+              Payments {pendingPayments.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{pendingPayments.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="messages">
+              Messages {unreadMessages.length > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-destructive">{unreadMessages.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" /> Settings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Doctors Tab */}
+          <TabsContent value="doctors" className="mt-6">
+            <div className="space-y-3">
+              {doctors.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No doctors registered yet</p>
+              ) : (
+                doctors.map((d) => (
+                  <Card key={d.id}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {d.photo_url ? (
+                          <img src={d.photo_url} alt="Doctor" className="h-12 w-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-bold">
+                            {d.profiles?.first_name?.[0] ?? "D"}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-display font-semibold text-foreground">
+                            Dr. {d.profiles?.first_name} {d.profiles?.last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{d.specialty || "Not specified"} • {d.profiles?.email}</p>
+                          {d.consultation_fee > 0 && (
+                            <p className="text-xs text-muted-foreground">Fee: ${d.consultation_fee}</p>
+                          )}
                         </div>
-                      )}
-                      <div>
-                        <p className="font-display font-semibold text-foreground">
-                          Dr. {d.profiles?.first_name} {d.profiles?.last_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{d.specialty || "Not specified"} • {d.profiles?.email}</p>
-                        {d.consultation_fee > 0 && (
-                          <p className="text-xs text-muted-foreground">Fee: ${d.consultation_fee}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={uploadingPhotoFor === d.id}
+                          onClick={() => {
+                            setUploadingPhotoFor(d.id);
+                            photoInputRef.current?.click();
+                          }}
+                        >
+                          <Upload className="h-3.5 w-3.5 mr-1" />
+                          {uploadingPhotoFor === d.id ? "Uploading..." : "Photo"}
+                        </Button>
+                        {d.is_approved ? (
+                          <Badge className="bg-success/10 text-success">
+                            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approved
+                          </Badge>
+                        ) : (
+                          <Button size="sm" onClick={() => approveDoctor(d.id)}>
+                            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
+                          </Button>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={uploadingPhotoFor === d.id}
-                        onClick={() => {
-                          setUploadingPhotoFor(d.id);
-                          photoInputRef.current?.click();
-                        }}
-                      >
-                        <Upload className="h-3.5 w-3.5 mr-1" />
-                        {uploadingPhotoFor === d.id ? "Uploading..." : "Photo"}
-                      </Button>
-                      {d.is_approved ? (
-                        <Badge className="bg-success/10 text-success">
-                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approved
-                        </Badge>
-                      ) : (
-                        <Button size="sm" onClick={() => approveDoctor(d.id)}>
-                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Payments Tab */}
-        <TabsContent value="payments" className="mt-6">
-          <div className="space-y-3">
-            {payments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No payments yet</p>
-            ) : (
-              payments.map((p) => {
-                const patient = profiles.find((pr) => pr.user_id === p.patient_id);
-                const doctor = doctors.find((d) => d.user_id === p.doctor_id);
-                const appointment = appointments.find((a) => a.id === p.appointment_id);
-                return (
-                  <Card key={p.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            {patient?.first_name} {patient?.last_name} → Dr. {doctor?.profiles?.first_name} {doctor?.profiles?.last_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Amount: ${p.amount} • {new Date(p.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={
-                            p.status === "verified" ? "bg-success/10 text-success" :
-                            p.status === "rejected" ? "bg-destructive/10 text-destructive" :
-                            "bg-warning/10 text-warning"
-                          }>
-                            {p.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      {/* Screenshot preview */}
-                      {p.screenshot_url && (
-                        <div className="mb-3">
-                          <button
-                            onClick={() => setPreviewImage(p.screenshot_url)}
-                            className="block rounded-lg overflow-hidden border hover:border-primary transition-colors cursor-pointer"
-                          >
-                            <img
-                              src={p.screenshot_url}
-                              alt="Payment screenshot"
-                              className="w-full max-h-40 object-contain bg-muted"
-                            />
-                          </button>
-                          <button
-                            onClick={() => setPreviewImage(p.screenshot_url)}
-                            className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
-                          >
-                            <Eye className="h-4 w-4" /> View Full Screenshot
-                          </button>
-                        </div>
-                      )}
-                      {/* Consultation code display */}
-                      {p.status === "verified" && appointment?.consultation_code && (
-                        <div className="mb-3 p-2 rounded-lg bg-success/5 border border-success/20">
-                          <p className="text-xs text-success font-medium">
-                            Consultation Code: <span className="font-mono text-sm">{appointment.consultation_code}</span>
-                          </p>
-                        </div>
-                      )}
-                      {p.status === "submitted" && (
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => verifyPayment(p.id, true)}>
-                            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify Payment
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => verifyPayment(p.id, false)}>
-                            <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
-                          </Button>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
-                );
-              })
-            )}
-          </div>
-        </TabsContent>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
-        {/* Messages Tab */}
-        <TabsContent value="messages" className="mt-6">
-          <div className="space-y-3">
-            {contactMessages.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No messages yet</p>
-            ) : (
-              contactMessages.map((m: any) => (
-                <Card key={m.id} className={m.is_read ? "opacity-70" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-display font-semibold text-sm text-foreground flex items-center gap-2">
-                          {m.name}
-                          {!m.is_read && <Badge className="bg-primary text-primary-foreground text-[10px]">New</Badge>}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{m.email} • {new Date(m.created_at).toLocaleString()}</p>
-                      </div>
-                      <div className="flex gap-1">
-                        {!m.is_read && (
-                          <Button size="sm" variant="ghost" onClick={() => markMessageRead(m.id)}>
-                            <CheckCircle className="h-3.5 w-3.5" />
-                          </Button>
+          {/* Payments Tab */}
+          <TabsContent value="payments" className="mt-6">
+            <div className="space-y-3">
+              {payments.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No payments yet</p>
+              ) : (
+                payments.map((p) => {
+                  const patient = profiles.find((pr) => pr.user_id === p.patient_id);
+                  const doctor = doctors.find((d) => d.user_id === p.doctor_id);
+                  const appointment = appointments.find((a) => a.id === p.appointment_id);
+                  return (
+                    <Card key={p.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {patient?.first_name} {patient?.last_name} → Dr. {doctor?.profiles?.first_name} {doctor?.profiles?.last_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Amount: ${p.amount} • {new Date(p.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={
+                              p.status === "verified" ? "bg-success/10 text-success" :
+                              p.status === "rejected" ? "bg-destructive/10 text-destructive" :
+                              "bg-warning/10 text-warning"
+                            }>
+                              {p.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        {p.screenshot_url && (
+                          <div className="mb-3">
+                            <button
+                              onClick={() => setPreviewImage(p.screenshot_url)}
+                              className="block rounded-lg overflow-hidden border hover:border-primary transition-colors cursor-pointer"
+                            >
+                              <img
+                                src={p.screenshot_url}
+                                alt="Payment screenshot"
+                                className="w-full max-h-40 object-contain bg-muted"
+                              />
+                            </button>
+                            <button
+                              onClick={() => setPreviewImage(p.screenshot_url)}
+                              className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
+                            >
+                              <Eye className="h-4 w-4" /> View Full Screenshot
+                            </button>
+                          </div>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => deleteMessage(m.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        {p.status === "verified" && appointment?.consultation_code && (
+                          <div className="mb-3 p-2 rounded-lg bg-success/5 border border-success/20">
+                            <p className="text-xs text-success font-medium">
+                              Consultation Code: <span className="font-mono text-sm">{appointment.consultation_code}</span>
+                            </p>
+                          </div>
+                        )}
+                        {p.status === "submitted" && (
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => verifyPayment(p.id, true)}>
+                              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Verify Payment
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => verifyPayment(p.id, false)}>
+                              <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages" className="mt-6">
+            <div className="space-y-3">
+              {contactMessages.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No messages yet</p>
+              ) : (
+                contactMessages.map((m: any) => (
+                  <Card key={m.id} className={m.is_read ? "opacity-70" : ""}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-display font-semibold text-sm text-foreground flex items-center gap-2">
+                            {m.name}
+                            {!m.is_read && <Badge className="bg-primary text-primary-foreground text-[10px]">New</Badge>}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{m.email} • {new Date(m.created_at).toLocaleString()}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          {!m.is_read && (
+                            <Button size="sm" variant="ghost" onClick={() => markMessageRead(m.id)}>
+                              <CheckCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => deleteMessage(m.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
+                      <p className="text-sm font-medium text-foreground">{m.subject}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{m.message}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="mt-6">
+            <div className="space-y-3">
+              {profiles.map((p) => (
+                <Card key={p.id}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display font-bold text-sm text-muted-foreground">
+                      {p.first_name?.[0] ?? "U"}
                     </div>
-                    <p className="text-sm font-medium text-foreground">{m.subject}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{m.message}</p>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
+                      <p className="text-xs text-muted-foreground">{p.email}</p>
+                    </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
+              ))}
+            </div>
+          </TabsContent>
 
-        {/* Users Tab */}
-        <TabsContent value="users" className="mt-6">
-          <div className="space-y-3">
-            {profiles.map((p) => (
-              <Card key={p.id}>
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-display font-bold text-sm text-muted-foreground">
-                    {p.first_name?.[0] ?? "U"}
+          {/* Appointments Tab */}
+          <TabsContent value="appointments" className="mt-6">
+            <div className="space-y-3">
+              {appointments.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No appointments yet</p>
+              ) : (
+                appointments.slice(0, 20).map((a) => (
+                  <Card key={a.id}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {a.appointment_date} at {a.appointment_time}
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
+                      </div>
+                      <Badge variant="secondary" className="capitalize">{a.status}</Badge>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="mt-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-display text-lg flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" /> Bank & Payment Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Bank Name</Label>
+                    <Input value={settingsForm.bank_name} onChange={(e) => setSettingsForm({ ...settingsForm, bank_name: e.target.value })} placeholder="e.g. Commercial Bank of Ethiopia" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{p.first_name} {p.last_name}</p>
-                    <p className="text-xs text-muted-foreground">{p.email}</p>
+                    <Label>Bank Account Number</Label>
+                    <Input value={settingsForm.bank_account_number} onChange={(e) => setSettingsForm({ ...settingsForm, bank_account_number: e.target.value })} placeholder="e.g. 1000123456789" />
+                  </div>
+                  <div>
+                    <Label>Payment Instructions</Label>
+                    <Textarea value={settingsForm.payment_instructions} onChange={(e) => setSettingsForm({ ...settingsForm, payment_instructions: e.target.value })} rows={3} />
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
 
-        {/* Appointments Tab */}
-        <TabsContent value="appointments" className="mt-6">
-          <div className="space-y-3">
-            {appointments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No appointments yet</p>
-            ) : (
-              appointments.slice(0, 20).map((a) => (
-                <Card key={a.id}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {a.appointment_date} at {a.appointment_time}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
-                    </div>
-                    <Badge variant="secondary" className="capitalize">{a.status}</Badge>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-display text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-secondary" /> Contact & Emergency
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Emergency Phone Number</Label>
+                    <Input value={settingsForm.emergency_phone} onChange={(e) => setSettingsForm({ ...settingsForm, emergency_phone: e.target.value })} placeholder="e.g. 1-800-123-4567" />
+                  </div>
+                  <div>
+                    <Label>Contact Phone</Label>
+                    <Input value={settingsForm.contact_phone} onChange={(e) => setSettingsForm({ ...settingsForm, contact_phone: e.target.value })} placeholder="e.g. 1-800-123-4567" />
+                  </div>
+                  <div>
+                    <Label>Contact Email</Label>
+                    <Input value={settingsForm.contact_email} onChange={(e) => setSettingsForm({ ...settingsForm, contact_email: e.target.value })} placeholder="e.g. support@smartcare.com" />
+                  </div>
+                </CardContent>
+              </Card>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="mt-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" /> Bank & Payment Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Bank Name</Label>
-                  <Input value={settingsForm.bank_name} onChange={(e) => setSettingsForm({ ...settingsForm, bank_name: e.target.value })} placeholder="e.g. Commercial Bank of Ethiopia" />
-                </div>
-                <div>
-                  <Label>Bank Account Number</Label>
-                  <Input value={settingsForm.bank_account_number} onChange={(e) => setSettingsForm({ ...settingsForm, bank_account_number: e.target.value })} placeholder="e.g. 1000123456789" />
-                </div>
-                <div>
-                  <Label>Payment Instructions</Label>
-                  <Textarea value={settingsForm.payment_instructions} onChange={(e) => setSettingsForm({ ...settingsForm, payment_instructions: e.target.value })} rows={3} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-display text-lg flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-secondary" /> Contact & Emergency
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Emergency Phone Number</Label>
-                  <Input value={settingsForm.emergency_phone} onChange={(e) => setSettingsForm({ ...settingsForm, emergency_phone: e.target.value })} placeholder="e.g. 1-800-123-4567" />
-                </div>
-                <div>
-                  <Label>Contact Phone</Label>
-                  <Input value={settingsForm.contact_phone} onChange={(e) => setSettingsForm({ ...settingsForm, contact_phone: e.target.value })} placeholder="e.g. 1-800-123-4567" />
-                </div>
-                <div>
-                  <Label>Contact Email</Label>
-                  <Input value={settingsForm.contact_email} onChange={(e) => setSettingsForm({ ...settingsForm, contact_email: e.target.value })} placeholder="e.g. support@smartcare.com" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="md:col-span-2">
-              <Button onClick={saveSettings}>Save All Settings</Button>
+              <div className="md:col-span-2">
+                <Button onClick={saveSettings}>Save All Settings</Button>
+              </div>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
