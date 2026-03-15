@@ -37,23 +37,44 @@ export default function PatientDashboard() {
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
+  const fetchData = async () => {
+    if (!user) return;
+    const [profileRes, apptRes, rxRes, docRes, payRes] = await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("appointments").select("*").eq("patient_id", user.id).order("appointment_date", { ascending: false }).limit(10),
+      supabase.from("prescriptions").select("*").eq("patient_id", user.id).order("created_at", { ascending: false }).limit(5),
+      supabase.from("medical_documents").select("*").eq("patient_id", user.id).order("uploaded_at", { ascending: false }).limit(5),
+      supabase.from("payments").select("*").eq("patient_id", user.id).order("created_at", { ascending: false }),
+    ]);
+    setProfile(profileRes.data);
+    setAppointments(apptRes.data ?? []);
+    setPrescriptions(rxRes.data ?? []);
+    setDocuments(docRes.data ?? []);
+    setPayments(payRes.data ?? []);
+  };
+
   useEffect(() => {
     if (!user) return;
-    const fetchData = async () => {
-      const [profileRes, apptRes, rxRes, docRes, payRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
-        supabase.from("appointments").select("*").eq("patient_id", user.id).order("appointment_date", { ascending: false }).limit(10),
-        supabase.from("prescriptions").select("*").eq("patient_id", user.id).order("created_at", { ascending: false }).limit(5),
-        supabase.from("medical_documents").select("*").eq("patient_id", user.id).order("uploaded_at", { ascending: false }).limit(5),
-        supabase.from("payments").select("*").eq("patient_id", user.id).order("created_at", { ascending: false }),
-      ]);
-      setProfile(profileRes.data);
-      setAppointments(apptRes.data ?? []);
-      setPrescriptions(rxRes.data ?? []);
-      setDocuments(docRes.data ?? []);
-      setPayments(payRes.data ?? []);
-    };
     fetchData();
+
+    // Subscribe to realtime changes on appointments and payments
+    const channel = supabase
+      .channel('patient-dashboard')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments', filter: `patient_id=eq.${user.id}` },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments', filter: `patient_id=eq.${user.id}` },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleVerifyConsultationCode = async (appointment: any) => {
