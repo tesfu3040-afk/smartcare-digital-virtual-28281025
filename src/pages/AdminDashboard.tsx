@@ -525,6 +525,7 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
           <p className="text-muted-foreground text-sm">Manage SmartCare platform</p>
