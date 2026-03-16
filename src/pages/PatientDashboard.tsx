@@ -361,12 +361,34 @@ export default function PatientDashboard() {
               <p className="text-muted-foreground text-sm py-4 text-center">No prescriptions yet</p>
             ) : (
               <div className="space-y-3">
-                {prescriptions.map((rx) => (
-                  <div key={rx.id} className="p-3 rounded-lg border">
-                    <p className="text-sm font-medium text-foreground">{rx.diagnosis || "Prescription"}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(rx.created_at).toLocaleDateString()}
-                    </p>
+                {prescriptions.map((rx: any) => (
+                  <div key={rx.id} className="p-3 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground">{rx.diagnosis || "Prescription"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(rx.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {rx.notes && (
+                      <p className="text-xs text-muted-foreground">{rx.notes}</p>
+                    )}
+                    {Array.isArray(rx.medications) && rx.medications.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {rx.medications.map((med: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="text-xs">{med}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    {rx.file_url && (
+                      <a
+                        href={rx.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                      >
+                        <FileText className="h-3.5 w-3.5" /> View Prescription Document
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
