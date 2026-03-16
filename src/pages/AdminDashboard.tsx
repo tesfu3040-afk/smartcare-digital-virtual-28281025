@@ -82,6 +82,14 @@ export default function AdminDashboard() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhotoFor, setUploadingPhotoFor] = useState<string | null>(null);
 
+  // Prescription sending
+  const [rxDialogOpen, setRxDialogOpen] = useState(false);
+  const [rxTarget, setRxTarget] = useState<{ patient_id: string; appointment_id?: string } | null>(null);
+  const [rxForm, setRxForm] = useState({ diagnosis: "", notes: "", medications: "" });
+  const [rxFile, setRxFile] = useState<File | null>(null);
+  const [sendingRx, setSendingRx] = useState(false);
+  const rxFileRef = useRef<HTMLInputElement>(null);
+
   // Settings form
   const [settingsForm, setSettingsForm] = useState({
     bank_account_number: "", bank_name: "", payment_instructions: "",
