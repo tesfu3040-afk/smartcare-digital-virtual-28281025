@@ -42,6 +42,8 @@ import {
   Eye,
   ArrowLeft,
   Clock,
+  FileUp,
+  Pill,
 } from "lucide-react";
 import { toast } from "sonner";
 
