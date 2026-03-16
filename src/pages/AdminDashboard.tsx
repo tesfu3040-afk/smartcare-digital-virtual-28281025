@@ -841,19 +841,27 @@ export default function AdminDashboard() {
               {appointments.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No appointments yet</p>
               ) : (
-                appointments.slice(0, 20).map((a) => (
-                  <Card key={a.id}>
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {a.appointment_date} at {a.appointment_time}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
-                      </div>
-                      <Badge variant="secondary" className="capitalize">{a.status}</Badge>
-                    </CardContent>
-                  </Card>
-                ))
+                appointments.slice(0, 20).map((a) => {
+                  const patient = profiles.find((p) => p.user_id === a.patient_id);
+                  return (
+                    <Card key={a.id}>
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {patient?.first_name} {patient?.last_name} • {a.appointment_date} at {a.appointment_time}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openAdminRxDialog(a.patient_id, a.id)}>
+                            <FileUp className="h-3.5 w-3.5 mr-1" /> Prescription
+                          </Button>
+                          <Badge variant="secondary" className="capitalize">{a.status}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
           </TabsContent>
