@@ -285,6 +285,50 @@ export default function AdminDashboard() {
     toast.success("Message deleted");
   };
 
+  const openAdminRxDialog = (patientId: string, appointmentId?: string) => {
+    setRxTarget({ patient_id: patientId, appointment_id: appointmentId });
+    setRxForm({ diagnosis: "", notes: "", medications: "" });
+    setRxFile(null);
+    setRxDialogOpen(true);
+  };
+
+  const handleAdminSendRx = async () => {
+    if (!rxTarget || !user) return;
+    setSendingRx(true);
+    try {
+      let fileUrl: string | null = null;
+      if (rxFile) {
+        const filePath = `admin/${Date.now()}_${rxFile.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("prescription-documents")
+          .upload(filePath, rxFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage
+          .from("prescription-documents")
+          .getPublicUrl(filePath);
+        fileUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("prescriptions").insert({
+        doctor_id: user.id,
+        patient_id: rxTarget.patient_id,
+        appointment_id: rxTarget.appointment_id || null,
+        diagnosis: rxForm.diagnosis,
+        notes: rxForm.notes,
+        medications: rxForm.medications ? rxForm.medications.split(",").map((m: string) => m.trim()) : [],
+        file_url: fileUrl,
+      } as any);
+      if (error) throw error;
+
+      toast.success("Prescription sent to patient!");
+      setRxDialogOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send prescription");
+    } finally {
+      setSendingRx(false);
+    }
+  };
+
   if (role !== "admin") {
     return (
       <div className="container py-20 text-center">
