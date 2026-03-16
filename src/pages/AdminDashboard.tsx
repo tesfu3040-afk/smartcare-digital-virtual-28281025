@@ -42,6 +42,8 @@ import {
   Eye,
   ArrowLeft,
   Clock,
+  FileUp,
+  Pill,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,7 +58,7 @@ const PRESET_SPECIALTIES = [
 type StatsFilter = "users" | "doctors" | "appointments" | "completed" | "pending" | "confirmed" | null;
 
 export default function AdminDashboard() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { settings, updateSetting } = useAppSettings();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -79,6 +81,14 @@ export default function AdminDashboard() {
   // Doctor photo upload
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhotoFor, setUploadingPhotoFor] = useState<string | null>(null);
+
+  // Prescription sending
+  const [rxDialogOpen, setRxDialogOpen] = useState(false);
+  const [rxTarget, setRxTarget] = useState<{ patient_id: string; appointment_id?: string } | null>(null);
+  const [rxForm, setRxForm] = useState({ diagnosis: "", notes: "", medications: "" });
+  const [rxFile, setRxFile] = useState<File | null>(null);
+  const [sendingRx, setSendingRx] = useState(false);
+  const rxFileRef = useRef<HTMLInputElement>(null);
 
   // Settings form
   const [settingsForm, setSettingsForm] = useState({
@@ -275,6 +285,50 @@ export default function AdminDashboard() {
     toast.success("Message deleted");
   };
 
+  const openAdminRxDialog = (patientId: string, appointmentId?: string) => {
+    setRxTarget({ patient_id: patientId, appointment_id: appointmentId });
+    setRxForm({ diagnosis: "", notes: "", medications: "" });
+    setRxFile(null);
+    setRxDialogOpen(true);
+  };
+
+  const handleAdminSendRx = async () => {
+    if (!rxTarget || !user) return;
+    setSendingRx(true);
+    try {
+      let fileUrl: string | null = null;
+      if (rxFile) {
+        const filePath = `admin/${Date.now()}_${rxFile.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("prescription-documents")
+          .upload(filePath, rxFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage
+          .from("prescription-documents")
+          .getPublicUrl(filePath);
+        fileUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("prescriptions").insert({
+        doctor_id: user.id,
+        patient_id: rxTarget.patient_id,
+        appointment_id: rxTarget.appointment_id || null,
+        diagnosis: rxForm.diagnosis,
+        notes: rxForm.notes,
+        medications: rxForm.medications ? rxForm.medications.split(",").map((m: string) => m.trim()) : [],
+        file_url: fileUrl,
+      } as any);
+      if (error) throw error;
+
+      toast.success("Prescription sent to patient!");
+      setRxDialogOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send prescription");
+    } finally {
+      setSendingRx(false);
+    }
+  };
+
   if (role !== "admin") {
     return (
       <div className="container py-20 text-center">
@@ -422,6 +476,54 @@ export default function AdminDashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Prescription Dialog */}
+      <Dialog open={rxDialogOpen} onOpenChange={setRxDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <Pill className="h-5 w-5 text-primary" /> Send Prescription
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label>Diagnosis</Label>
+              <Input value={rxForm.diagnosis} onChange={(e) => setRxForm({ ...rxForm, diagnosis: e.target.value })} placeholder="e.g. Upper respiratory infection" />
+            </div>
+            <div>
+              <Label>Medications (comma-separated)</Label>
+              <Input value={rxForm.medications} onChange={(e) => setRxForm({ ...rxForm, medications: e.target.value })} placeholder="e.g. Amoxicillin 500mg, Ibuprofen 200mg" />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={rxForm.notes} onChange={(e) => setRxForm({ ...rxForm, notes: e.target.value })} rows={3} placeholder="Additional instructions..." />
+            </div>
+            <div>
+              <Label>Attach Prescription Document (PDF/Image)</Label>
+              <input
+                ref={rxFileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setRxFile(e.target.files?.[0] || null)}
+              />
+              <div className="mt-1 flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => rxFileRef.current?.click()}>
+                  <FileUp className="h-4 w-4 mr-1" /> {rxFile ? rxFile.name : "Choose file"}
+                </Button>
+                {rxFile && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setRxFile(null)}>
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleAdminSendRx} disabled={sendingRx}>
+              {sendingRx ? "Sending..." : "Send Prescription"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -739,19 +841,27 @@ export default function AdminDashboard() {
               {appointments.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No appointments yet</p>
               ) : (
-                appointments.slice(0, 20).map((a) => (
-                  <Card key={a.id}>
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {a.appointment_date} at {a.appointment_time}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
-                      </div>
-                      <Badge variant="secondary" className="capitalize">{a.status}</Badge>
-                    </CardContent>
-                  </Card>
-                ))
+                appointments.slice(0, 20).map((a) => {
+                  const patient = profiles.find((p) => p.user_id === a.patient_id);
+                  return (
+                    <Card key={a.id}>
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {patient?.first_name} {patient?.last_name} • {a.appointment_date} at {a.appointment_time}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openAdminRxDialog(a.patient_id, a.id)}>
+                            <FileUp className="h-3.5 w-3.5 mr-1" /> Prescription
+                          </Button>
+                          <Badge variant="secondary" className="capitalize">{a.status}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
           </TabsContent>
