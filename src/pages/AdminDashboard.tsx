@@ -477,7 +477,54 @@ export default function AdminDashboard() {
         </Dialog>
       )}
 
-      <div className="mb-8 flex items-center justify-between">
+      {/* Prescription Dialog */}
+      <Dialog open={rxDialogOpen} onOpenChange={setRxDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <Pill className="h-5 w-5 text-primary" /> Send Prescription
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label>Diagnosis</Label>
+              <Input value={rxForm.diagnosis} onChange={(e) => setRxForm({ ...rxForm, diagnosis: e.target.value })} placeholder="e.g. Upper respiratory infection" />
+            </div>
+            <div>
+              <Label>Medications (comma-separated)</Label>
+              <Input value={rxForm.medications} onChange={(e) => setRxForm({ ...rxForm, medications: e.target.value })} placeholder="e.g. Amoxicillin 500mg, Ibuprofen 200mg" />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={rxForm.notes} onChange={(e) => setRxForm({ ...rxForm, notes: e.target.value })} rows={3} placeholder="Additional instructions..." />
+            </div>
+            <div>
+              <Label>Attach Prescription Document (PDF/Image)</Label>
+              <input
+                ref={rxFileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setRxFile(e.target.files?.[0] || null)}
+              />
+              <div className="mt-1 flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => rxFileRef.current?.click()}>
+                  <FileUp className="h-4 w-4 mr-1" /> {rxFile ? rxFile.name : "Choose file"}
+                </Button>
+                {rxFile && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setRxFile(null)}>
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleAdminSendRx} disabled={sendingRx}>
+              {sendingRx ? "Sending..." : "Send Prescription"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Admin Dashboard</h1>
           <p className="text-muted-foreground text-sm">Manage SmartCare platform</p>
