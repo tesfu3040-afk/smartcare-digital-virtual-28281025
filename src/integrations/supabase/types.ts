@@ -285,6 +285,7 @@ export type Database = {
           created_at: string
           diagnosis: string | null
           doctor_id: string
+          file_url: string | null
           id: string
           medications: Json
           notes: string | null
@@ -295,6 +296,7 @@ export type Database = {
           created_at?: string
           diagnosis?: string | null
           doctor_id: string
+          file_url?: string | null
           id?: string
           medications?: Json
           notes?: string | null
@@ -305,6 +307,7 @@ export type Database = {
           created_at?: string
           diagnosis?: string | null
           doctor_id?: string
+          file_url?: string | null
           id?: string
           medications?: Json
           notes?: string | null
