@@ -70,6 +70,11 @@ export default function PatientDashboard() {
         { event: '*', schema: 'public', table: 'payments', filter: `patient_id=eq.${user.id}` },
         () => fetchData()
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prescriptions', filter: `patient_id=eq.${user.id}` },
+        () => fetchData()
+      )
       .subscribe();
 
     return () => {
