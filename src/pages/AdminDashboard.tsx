@@ -58,7 +58,7 @@ const PRESET_SPECIALTIES = [
 type StatsFilter = "users" | "doctors" | "appointments" | "completed" | "pending" | "confirmed" | null;
 
 export default function AdminDashboard() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { settings, updateSetting } = useAppSettings();
   const [doctors, setDoctors] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
