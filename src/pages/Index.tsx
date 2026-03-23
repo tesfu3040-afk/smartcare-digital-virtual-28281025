@@ -271,6 +271,37 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Demo Video */}
+      <section className="bg-muted/50 py-20">
+        <div className="container">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">See How It Works</h2>
+            <p className="mt-3 text-muted-foreground">
+              Watch a quick demo to learn how SmartCare makes healthcare simple
+            </p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-card"
+            >
+              <video
+                controls
+                className="w-full aspect-video"
+                poster=""
+                preload="metadata"
+              >
+                <source src="/smartcare-demo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="bg-muted/50 py-20">
         <div className="container">
