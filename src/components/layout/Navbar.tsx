@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
 import { useAppSettings } from "@/hooks/use-app-settings";
+import { useLanguage } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   Menu,
   X,
@@ -13,21 +15,22 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/services", label: "Services" },
-  { href: "/special-care", label: "Special Care" },
-  { href: "/doctors", label: "Doctors" },
-  { href: "/contact", label: "Contact" },
-  { href: "/faq", label: "FAQ" },
-];
-
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const { t } = useLanguage();
   const emergencyPhone = settings.emergency_phone || "1-800-123-4567";
+
+  const navLinks = [
+    { href: "/", label: t("nav.home") },
+    { href: "/services", label: t("nav.services") },
+    { href: "/special-care", label: t("nav.specialCare") },
+    { href: "/doctors", label: t("nav.doctors") },
+    { href: "/contact", label: t("nav.contact") },
+    { href: "/faq", label: t("nav.faq") },
+  ];
 
   const dashboardPath =
     role === "admin" ? "/admin" : role === "doctor" ? "/doctor-dashboard" : "/patient-dashboard";
@@ -37,7 +40,7 @@ export default function Navbar() {
       {/* Emergency bar */}
       <div className="bg-destructive text-destructive-foreground text-center text-sm py-1.5 font-medium flex items-center justify-center gap-2">
         <Phone className="h-3.5 w-3.5" />
-        Emergency? Call{" "}
+        {t("nav.emergency")}{" "}
         <a href={`tel:${emergencyPhone}`} className="underline font-bold">
           {emergencyPhone}
         </a>
@@ -68,22 +71,23 @@ export default function Navbar() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
+            <LanguageSwitcher />
             {user ? (
               <>
                 <Button variant="ghost" size="sm" onClick={() => navigate(dashboardPath)}>
-                  <LayoutDashboard className="h-4 w-4 mr-1" /> Dashboard
+                  <LayoutDashboard className="h-4 w-4 mr-1" /> {t("nav.dashboard")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={signOut}>
-                  <LogOut className="h-4 w-4 mr-1" /> Sign Out
+                  <LogOut className="h-4 w-4 mr-1" /> {t("nav.signOut")}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
-                  Sign In
+                  {t("nav.signIn")}
                 </Button>
                 <Button size="sm" onClick={() => navigate("/auth?tab=register")}>
-                  Get Started
+                  {t("nav.getStarted")}
                 </Button>
               </>
             )}
@@ -91,11 +95,14 @@ export default function Navbar() {
 
           {/* Mobile menu */}
           <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </SheetTrigger>
+            <div className="flex items-center gap-1 md:hidden">
+              <LanguageSwitcher compact />
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </Button>
+              </SheetTrigger>
+            </div>
             <SheetContent side="right" className="w-72">
               <nav className="flex flex-col gap-2 mt-8">
                 {navLinks.map((l) => (
@@ -116,7 +123,7 @@ export default function Navbar() {
                       onClick={() => setOpen(false)}
                       className="px-4 py-3 text-sm font-medium rounded-lg hover:bg-muted"
                     >
-                      Dashboard
+                      {t("nav.dashboard")}
                     </Link>
                     <button
                       onClick={() => {
@@ -125,7 +132,7 @@ export default function Navbar() {
                       }}
                       className="px-4 py-3 text-sm font-medium text-left rounded-lg hover:bg-muted text-destructive"
                     >
-                      Sign Out
+                      {t("nav.signOut")}
                     </button>
                   </>
                 ) : (
@@ -135,14 +142,14 @@ export default function Navbar() {
                       onClick={() => setOpen(false)}
                       className="px-4 py-3 text-sm font-medium rounded-lg hover:bg-muted"
                     >
-                      Sign In
+                      {t("nav.signIn")}
                     </Link>
                     <Link
                       to="/auth?tab=register"
                       onClick={() => setOpen(false)}
                       className="px-4 py-3 text-sm font-medium rounded-lg bg-primary text-primary-foreground text-center"
                     >
-                      Get Started
+                      {t("nav.getStarted")}
                     </Link>
                   </>
                 )}
