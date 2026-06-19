@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { Stethoscope, Mail, Phone, MapPin } from "lucide-react";
 import { useAppSettings } from "@/hooks/use-app-settings";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Footer() {
   const { settings } = useAppSettings();
+  const { t } = useLanguage();
   const contactPhone = settings.contact_phone || "1-800-123-4567";
   const contactEmail = settings.contact_email || "support@smartcare.com";
 
@@ -21,19 +23,19 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm text-background/60 leading-relaxed">
-              Your trusted virtual healthcare partner. Quality medical care from the comfort of your home.
+              {t("footer.tagline")}
             </p>
           </div>
 
           <div>
-            <h4 className="font-display font-semibold text-background mb-4">Quick Links</h4>
+            <h4 className="font-display font-semibold text-background mb-4">{t("footer.quickLinks")}</h4>
             <ul className="space-y-2 text-sm">
               {[
-                { to: "/services", label: "Services" },
-                { to: "/doctors", label: "Find a Doctor" },
-                { to: "/auth?tab=register", label: "Patient Registration" },
-                { to: "/auth?tab=register&role=doctor", label: "Doctor Registration" },
-                { to: "/blog", label: "Health Blog" },
+                { to: "/services", label: t("footer.services") },
+                { to: "/doctors", label: t("footer.findDoctor") },
+                { to: "/auth?tab=register", label: t("footer.patientReg") },
+                { to: "/auth?tab=register&role=doctor", label: t("footer.doctorReg") },
+                { to: "/blog", label: t("footer.healthBlog") },
               ].map((l) => (
                 <li key={l.to}>
                   <Link to={l.to} className="hover:text-primary transition-colors">
@@ -45,9 +47,15 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold text-background mb-4">Services</h4>
+            <h4 className="font-display font-semibold text-background mb-4">{t("footer.services")}</h4>
             <ul className="space-y-2 text-sm">
-              {["Telemedicine", "Lab Requests", "E-Prescriptions", "Virtual Pharmacy", "Mental Health"].map((s) => (
+              {[
+                t("footer.svc.telemedicine"),
+                t("footer.svc.lab"),
+                t("footer.svc.eprescriptions"),
+                t("footer.svc.pharmacy"),
+                t("footer.svc.mental"),
+              ].map((s) => (
                 <li key={s}>
                   <Link to="/services" className="hover:text-primary transition-colors">
                     {s}
@@ -58,7 +66,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold text-background mb-4">Contact</h4>
+            <h4 className="font-display font-semibold text-background mb-4">{t("footer.contact")}</h4>
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" /> {contactPhone}
@@ -75,10 +83,10 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-background/50">
-          <p>&copy; {new Date().getFullYear()} SmartCare. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SmartCare. {t("footer.rights")}</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">{t("footer.privacy")}</Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">{t("footer.terms")}</Link>
           </div>
         </div>
       </div>
