@@ -92,7 +92,7 @@ export default function PatientDashboard() {
     try {
       const { data, error } = await supabase
         .from("appointments")
-        .select("consultation_code, consultation_code_used, appointment_date, appointment_time")
+        .select("consultation_code, consultation_code_used, consultation_code_expires_at")
         .eq("id", appointment.id)
         .maybeSingle();
 
@@ -107,9 +107,9 @@ export default function PatientDashboard() {
         return;
       }
 
-      const apptDateTime = new Date(`${data.appointment_date}T${data.appointment_time}`);
-      if (new Date() > apptDateTime) {
-        toast.error("This consultation code has expired (appointment time has passed)");
+      const expiresAt = (data as any).consultation_code_expires_at ? new Date((data as any).consultation_code_expires_at) : null;
+      if (expiresAt && new Date() > expiresAt) {
+        toast.error("This consultation code has expired (valid for 2 weeks from generation)");
         return;
       }
 
