@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import clinicalBg from "@/assets/clinical-bg.png";
 import doctorHero1 from "@/assets/doctor-hero-1.png";
 import doctorHero2 from "@/assets/doctor-hero-2.png";
+import { useLanguage } from "@/lib/i18n";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -49,23 +50,22 @@ const pulseFloat = {
   transition: { duration: 3, repeat: Infinity, ease: "easeInOut" as const },
 };
 
-const services = [
-  { icon: Video, title: "Video Consultation", desc: "Face-to-face with doctors from home" },
-  { icon: MessageSquare, title: "Chat Consultation", desc: "Quick text-based medical advice" },
-  { icon: FlaskConical, title: "Lab Test Requests", desc: "Order lab tests online easily" },
-  { icon: Pill, title: "Virtual Pharmacy", desc: "E-prescriptions & delivery" },
-  { icon: Brain, title: "Mental Health", desc: "Therapy & counseling sessions" },
-  { icon: HeartPulse, title: "Health Monitoring", desc: "Track and manage your health" },
-];
-
-const stats = [
-  { value: "50K+", label: "Patients Served" },
-  { value: "200+", label: "Verified Doctors" },
-  { value: "98%", label: "Satisfaction Rate" },
-  { value: "24/7", label: "Available" },
-];
-
 const Index = () => {
+  const { t } = useLanguage();
+  const services = [
+    { icon: Video, title: t("svc.video.title"), desc: t("svc.video.desc") },
+    { icon: MessageSquare, title: t("svc.chat.title"), desc: t("svc.chat.desc") },
+    { icon: FlaskConical, title: t("svc.lab.title"), desc: t("svc.lab.desc") },
+    { icon: Pill, title: t("svc.pharm.title"), desc: t("svc.pharm.desc") },
+    { icon: Brain, title: t("svc.mental.title"), desc: t("svc.mental.desc") },
+    { icon: HeartPulse, title: t("svc.monitor.title"), desc: t("svc.monitor.desc") },
+  ];
+  const stats = [
+    { value: "50K+", label: t("stat.patients") },
+    { value: "200+", label: t("stat.doctors") },
+    { value: "98%", label: t("stat.satisfaction") },
+    { value: "24/7", label: t("stat.available") },
+  ];
   return (
     <div>
       {/* Hero */}
@@ -120,23 +120,21 @@ const Index = () => {
               className="space-y-6"
             >
               <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white rounded-full px-4 py-1.5 text-sm font-medium border border-white/20">
-                <ShieldCheck className="h-4 w-4" /> Trusted Virtual Healthcare
+                <ShieldCheck className="h-4 w-4" /> {t("home.badge")}
               </div>
               <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-white">
-                Quality Healthcare,{" "}
-                <span className="text-secondary">Anytime, Anywhere</span>
+                {t("home.heroTitle1")}{" "}
+                <span className="text-secondary">{t("home.heroTitle2")}</span>
               </h1>
-              <p className="text-lg text-white/80 max-w-lg">
-                Connect with certified doctors through video or chat consultations. Get prescriptions, lab results, and pharmacy services — all from the comfort of your home.
-              </p>
+              <p className="text-lg text-white/80 max-w-lg">{t("home.heroDesc")}</p>
               <div className="flex flex-wrap gap-3">
                 <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold" asChild>
                   <Link to="/auth?tab=register">
-                    Book Consultation <ArrowRight className="ml-2 h-4 w-4" />
+                    {t("home.bookConsult")} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10" asChild>
-                  <Link to="/doctors">Browse Doctors</Link>
+                  <Link to="/doctors">{t("home.browseDoctors")}</Link>
                 </Button>
               </div>
             </motion.div>
@@ -183,7 +181,7 @@ const Index = () => {
                     </div>
                     <div>
                       <p className="text-xl font-display font-bold text-foreground">50K+</p>
-                      <p className="text-xs text-muted-foreground">Happy Patients</p>
+                      <p className="text-xs text-muted-foreground">{t("home.happyPatients")}</p>
                     </div>
                   </div>
                 </div>
@@ -200,8 +198,8 @@ const Index = () => {
                       <Calendar className="h-4 w-4 text-accent" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-foreground">Next Appointment</p>
-                      <p className="text-[10px] text-muted-foreground">Today, 2:30 PM</p>
+                      <p className="text-xs font-semibold text-foreground">{t("home.nextAppt")}</p>
+                      <p className="text-[10px] text-muted-foreground">{t("home.today230")}</p>
                     </div>
                   </div>
                 </div>
@@ -235,10 +233,8 @@ const Index = () => {
       {/* Services */}
       <section className="container py-20">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">Our Services</h2>
-          <p className="mt-3 text-muted-foreground">
-            Comprehensive virtual healthcare services designed for your convenience
-          </p>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">{t("home.ourServices")}</h2>
+          <p className="mt-3 text-muted-foreground">{t("home.ourServicesDesc")}</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((s, i) => (
@@ -265,7 +261,7 @@ const Index = () => {
         <div className="text-center mt-10">
           <Button variant="outline" size="lg" asChild>
             <Link to="/services">
-              View All Services <ArrowRight className="ml-2 h-4 w-4" />
+              {t("home.viewAll")} <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -275,10 +271,8 @@ const Index = () => {
       <section className="bg-muted/50 py-20">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">See How It Works</h2>
-            <p className="mt-3 text-muted-foreground">
-              Watch a quick demo to learn how SmartCare makes healthcare simple
-            </p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">{t("home.demoTitle")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("home.demoDesc")}</p>
           </div>
           <div className="max-w-4xl mx-auto">
             <motion.div
@@ -306,14 +300,14 @@ const Index = () => {
       <section className="bg-muted/50 py-20">
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">How It Works</h2>
-            <p className="mt-3 text-muted-foreground">Get started in three simple steps</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">{t("home.howTitle")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("home.howDesc")}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: "1", icon: Users, title: "Create Account", desc: "Sign up as a patient or doctor in minutes" },
-              { step: "2", icon: Calendar, title: "Book Appointment", desc: "Choose your doctor, date, and consultation type" },
-              { step: "3", icon: Video, title: "Start Consultation", desc: "Connect via video or chat with your doctor" },
+              { step: "1", icon: Users, title: t("home.step1"), desc: t("home.step1desc") },
+              { step: "2", icon: Calendar, title: t("home.step2"), desc: t("home.step2desc") },
+              { step: "3", icon: Video, title: t("home.step3"), desc: t("home.step3desc") },
             ].map((item, i) => (
               <motion.div
                 key={item.step}
@@ -338,7 +332,7 @@ const Index = () => {
       {/* Testimonials */}
       <section className="container py-20">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">What Patients Say</h2>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">{t("home.testimonials")}</h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
@@ -373,13 +367,11 @@ const Index = () => {
       {/* CTA */}
       <section className="bg-gradient-to-r from-primary to-secondary py-16">
         <div className="container text-center text-primary-foreground space-y-6">
-          <h2 className="font-display text-3xl md:text-4xl font-bold">Ready to Get Started?</h2>
-          <p className="text-lg opacity-90 max-w-xl mx-auto">
-            Join thousands of patients who trust SmartCare for their healthcare needs.
-          </p>
+          <h2 className="font-display text-3xl md:text-4xl font-bold">{t("home.cta.title")}</h2>
+          <p className="text-lg opacity-90 max-w-xl mx-auto">{t("home.cta.desc")}</p>
           <div className="flex justify-center gap-3">
             <Button size="lg" variant="secondary" asChild>
-              <Link to="/auth?tab=register">Create Free Account</Link>
+              <Link to="/auth?tab=register">{t("home.cta.create")}</Link>
             </Button>
             <Button
               size="lg"
@@ -387,7 +379,7 @@ const Index = () => {
               className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
               asChild
             >
-              <Link to="/contact">Contact Us</Link>
+              <Link to="/contact">{t("home.cta.contact")}</Link>
             </Button>
           </div>
         </div>
