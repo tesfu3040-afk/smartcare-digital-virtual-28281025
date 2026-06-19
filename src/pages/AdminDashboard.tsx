@@ -240,9 +240,11 @@ export default function AdminDashboard() {
 
     if (verified && payment) {
       consultationCode = generateConsultationCode();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 14);
       const { error: codeError } = await supabase
         .from("appointments")
-        .update({ consultation_code: consultationCode } as any)
+        .update({ consultation_code: consultationCode, consultation_code_expires_at: expiresAt.toISOString() } as any)
         .eq("id", payment.appointment_id);
       if (codeError) {
         toast.error("Failed to generate consultation code");
