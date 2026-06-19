@@ -40,6 +40,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           consultation_code: string | null
+          consultation_code_expires_at: string | null
           consultation_code_used: boolean
           consultation_type: string
           created_at: string
@@ -55,6 +56,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           consultation_code?: string | null
+          consultation_code_expires_at?: string | null
           consultation_code_used?: boolean
           consultation_type?: string
           created_at?: string
@@ -70,6 +72,7 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           consultation_code?: string | null
+          consultation_code_expires_at?: string | null
           consultation_code_used?: boolean
           consultation_type?: string
           created_at?: string
