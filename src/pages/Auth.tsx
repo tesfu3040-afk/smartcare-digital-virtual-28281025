@@ -11,8 +11,10 @@ import { Stethoscope, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import clinicalBg from "@/assets/clinical-bg.png";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Auth() {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") === "register" ? "register" : "login";
   const defaultRole = searchParams.get("role") || "patient";
@@ -49,7 +51,7 @@ export default function Auth() {
     e.preventDefault();
     if (!email.trim() || !password.trim() || !firstName.trim()) return;
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      toast.error(t("auth.pwShort"));
       return;
     }
     setLoading(true);
@@ -61,7 +63,7 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Check your email to confirm your account!");
+      toast.success(t("auth.confirmEmail"));
       setTab("login");
     }
     setLoading(false);
@@ -75,7 +77,7 @@ export default function Auth() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) toast.error(error.message);
-    else toast.success("Password reset link sent to your email!");
+    else toast.success(t("auth.resetSent"));
     setLoading(false);
   };
 
@@ -84,20 +86,20 @@ export default function Auth() {
       <div className="min-h-[80vh] flex items-center justify-center py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="font-display text-2xl">Reset Password</CardTitle>
-            <CardDescription>Enter your email to receive a reset link</CardDescription>
+            <CardTitle className="font-display text-2xl">{t("auth.resetTitle")}</CardTitle>
+            <CardDescription>{t("auth.resetDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
-                <Label>Email</Label>
+                <Label>{t("auth.email")}</Label>
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={255} />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending..." : "Send Reset Link"}
+                {loading ? t("auth.sending") : t("auth.sendReset")}
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => setForgotPassword(false)}>
-                Back to Login
+                {t("auth.backToLogin")}
               </Button>
             </form>
           </CardContent>
@@ -116,37 +118,37 @@ export default function Auth() {
               <Stethoscope className="h-6 w-6 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="font-display text-2xl">Welcome to SmartCare</CardTitle>
-          <CardDescription>Your virtual healthcare platform</CardDescription>
+          <CardTitle className="font-display text-2xl">{t("auth.welcome")}</CardTitle>
+          <CardDescription>{t("auth.tagline")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">{t("auth.signIn")}</TabsTrigger>
+              <TabsTrigger value="register">{t("auth.register")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div>
-                  <Label>Email</Label>
+                  <Label>{t("auth.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-9" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={255} />
                   </div>
                 </div>
                 <div>
-                  <Label>Password</Label>
+                  <Label>{t("auth.password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-9" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
+                  {loading ? t("auth.signingIn") : t("auth.signIn")} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 <Button variant="link" className="w-full" type="button" onClick={() => setForgotPassword(true)}>
-                  Forgot password?
+                  {t("auth.forgot")}
                 </Button>
               </form>
             </TabsContent>
@@ -155,46 +157,46 @@ export default function Auth() {
               <form onSubmit={handleRegister} className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>First Name</Label>
+                    <Label>{t("auth.firstName")}</Label>
                     <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={100} />
                   </div>
                   <div>
-                    <Label>Last Name</Label>
+                    <Label>{t("auth.lastName")}</Label>
                     <Input value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={100} />
                   </div>
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label>{t("auth.email")}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-9" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={255} />
                   </div>
                 </div>
                 <div>
-                  <Label>Password</Label>
+                  <Label>{t("auth.password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-9" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
                 </div>
                 <div>
-                  <Label>I am a</Label>
+                  <Label>{t("auth.iAmA")}</Label>
                   <Select value={role} onValueChange={setRole}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="patient">
-                        <div className="flex items-center gap-2"><User className="h-4 w-4" /> Patient</div>
+                        <div className="flex items-center gap-2"><User className="h-4 w-4" /> {t("auth.patient")}</div>
                       </SelectItem>
                       <SelectItem value="doctor">
-                        <div className="flex items-center gap-2"><Stethoscope className="h-4 w-4" /> Doctor</div>
+                        <div className="flex items-center gap-2"><Stethoscope className="h-4 w-4" /> {t("auth.doctor")}</div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Create Account"} <ArrowRight className="ml-2 h-4 w-4" />
+                  {loading ? t("auth.creating") : t("auth.createAccount")} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
             </TabsContent>
