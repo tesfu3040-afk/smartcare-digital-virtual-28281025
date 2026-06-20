@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Video, MessageSquare, DollarSign, ArrowLeft, Landmark, Info, Image, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import clinicalBg from "@/assets/clinical-bg.png";
+import { useLanguage } from "@/lib/i18n";
 
 export default function BookAppointment() {
+  const { t } = useLanguage();
   const { doctorId } = useParams<{ doctorId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -65,12 +67,12 @@ export default function BookAppointment() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !doctorId) {
-      toast.error("Please sign in to book");
+      toast.error(t("book.signInRequired"));
       navigate("/auth");
       return;
     }
     if (!screenshotFile) {
-      toast.error("Please upload your payment screenshot before booking");
+      toast.error(t("book.uploadRequired"));
       return;
     }
     setLoading(true);
@@ -107,10 +109,10 @@ export default function BookAppointment() {
         status: "submitted",
       });
 
-      toast.success("Appointment booked with payment! Admin will verify and send your consultation code.");
+      toast.success(t("book.success"));
       navigate("/patient-dashboard");
     } catch (err: any) {
-      toast.error(err.message || "Booking failed");
+      toast.error(err.message || t("book.failed"));
     } finally {
       setLoading(false);
     }
@@ -118,7 +120,7 @@ export default function BookAppointment() {
 
   if (!doctor) {
     return (
-      <div className="container py-20 text-center text-muted-foreground">Loading doctor information...</div>
+      <div className="container py-20 text-center text-muted-foreground">{t("book.loading")}</div>
     );
   }
 
@@ -133,18 +135,18 @@ export default function BookAppointment() {
       <section className="relative py-16 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `url(${clinicalBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="container text-center max-w-3xl relative z-10">
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-white">Book Appointment</h1>
-          <p className="mt-2 text-white/80">Schedule your consultation with a healthcare professional</p>
+          <h1 className="font-display text-3xl md:text-4xl font-bold text-white">{t("book.heroTitle")}</h1>
+          <p className="mt-2 text-white/80">{t("book.heroDesc")}</p>
         </div>
       </section>
       <div className="container py-8 max-w-2xl">
       <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        <ArrowLeft className="h-4 w-4 mr-1" /> {t("book.back")}
       </Button>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl">Book Appointment</CardTitle>
+          <CardTitle className="font-display text-xl">{t("book.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Doctor info */}
@@ -157,7 +159,7 @@ export default function BookAppointment() {
                 Dr. {profile?.first_name} {profile?.last_name}
               </p>
               <div className="flex items-center gap-3 mt-1">
-                <Badge variant="secondary">{doctor.specialty || "General"}</Badge>
+                <Badge variant="secondary">{doctor.specialty || t("doctors.general")}</Badge>
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <DollarSign className="h-3.5 w-3.5" />${doctor.consultation_fee}
                 </span>
@@ -169,18 +171,18 @@ export default function BookAppointment() {
           {hasBankInfo && (
             <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 mb-6 space-y-2">
               <div className="flex items-center gap-2 text-primary font-display font-semibold text-sm">
-                <Landmark className="h-4 w-4" /> Payment Information
+                <Landmark className="h-4 w-4" /> {t("book.paymentInfo")}
               </div>
               <p className="text-sm text-muted-foreground">
                 {settings.payment_instructions}
               </p>
               <div className="text-sm text-foreground space-y-1">
-                <p><span className="font-medium">Bank:</span> {settings.bank_name}</p>
-                <p><span className="font-medium">Account:</span> {settings.bank_account_number}</p>
+                <p><span className="font-medium">{t("book.bank")}</span> {settings.bank_name}</p>
+                <p><span className="font-medium">{t("book.account")}</span> {settings.bank_account_number}</p>
               </div>
               <div className="flex items-start gap-1.5 text-xs text-muted-foreground mt-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <span>Transfer the consultation fee and upload the screenshot below before booking.</span>
+                <span>{t("book.transferNote")}</span>
               </div>
             </div>
           )}
@@ -188,39 +190,39 @@ export default function BookAppointment() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <Label>Date</Label>
+                <Label>{t("book.date")}</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={minDate} required />
               </div>
               <div>
-                <Label>Time</Label>
+                <Label>{t("book.time")}</Label>
                 <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={doctor.available_start_time} max={doctor.available_end_time} required />
               </div>
             </div>
             <div>
-              <Label>Consultation Type</Label>
+              <Label>{t("book.consultationType")}</Label>
               <Select value={type} onValueChange={setType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="video">
-                    <div className="flex items-center gap-2"><Video className="h-4 w-4" /> Video Call</div>
+                    <div className="flex items-center gap-2"><Video className="h-4 w-4" /> {t("book.videoCall")}</div>
                   </SelectItem>
                   <SelectItem value="chat">
-                    <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Chat</div>
+                    <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> {t("book.chat")}</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Notes (optional)</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe your symptoms or reason for visit..." maxLength={500} rows={3} />
+              <Label>{t("book.notes")}</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("book.notesPlaceholder")} maxLength={500} rows={3} />
             </div>
 
             {/* Payment Screenshot Upload */}
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                <Image className="h-4 w-4" /> Payment Screenshot *
+                <Image className="h-4 w-4" /> {t("book.screenshot")}
               </Label>
               <input
                 type="file"
@@ -236,10 +238,10 @@ export default function BookAppointment() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-success/10 text-success">
-                      <CheckCircle className="h-3 w-3 mr-1" /> Screenshot attached
+                      <CheckCircle className="h-3 w-3 mr-1" /> {t("book.screenshotAttached")}
                     </Badge>
                     <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                      Change
+                      {t("book.change")}
                     </Button>
                   </div>
                 </div>
@@ -247,14 +249,14 @@ export default function BookAppointment() {
                 <Button type="button" variant="outline" className="w-full h-20 border-dashed" onClick={() => fileInputRef.current?.click()}>
                   <div className="flex flex-col items-center gap-1">
                     <Image className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Click to upload payment screenshot</span>
+                    <span className="text-sm text-muted-foreground">{t("book.uploadPrompt")}</span>
                   </div>
                 </Button>
               )}
             </div>
 
             <Button type="submit" className="w-full" disabled={loading || !screenshotFile}>
-              {loading ? "Booking..." : "Confirm Booking & Submit Payment"}
+              {loading ? t("book.booking") : t("book.confirm")}
             </Button>
           </form>
         </CardContent>
