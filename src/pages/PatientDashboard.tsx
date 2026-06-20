@@ -24,8 +24,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
 import VideoCall from "@/components/VideoCall";
+import { useLanguage } from "@/lib/i18n";
 
 export default function PatientDashboard() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -85,7 +87,7 @@ export default function PatientDashboard() {
   const handleVerifyConsultationCode = async (appointment: any) => {
     const code = consultationCodeInput[appointment.id]?.trim();
     if (!code) {
-      toast.error("Please enter the consultation code");
+      toast.error(t("pd.enterCodeError"));
       return;
     }
     setVerifyingCode(appointment.id);
@@ -99,17 +101,17 @@ export default function PatientDashboard() {
       if (error) throw error;
 
       if (!data || (data as any).consultation_code !== code) {
-        toast.error("Invalid consultation code");
+        toast.error(t("pd.invalidCode"));
         return;
       }
       if ((data as any).consultation_code_used) {
-        toast.error("This consultation code has already been used");
+        toast.error(t("pd.codeUsed"));
         return;
       }
 
       const expiresAt = (data as any).consultation_code_expires_at ? new Date((data as any).consultation_code_expires_at) : null;
       if (expiresAt && new Date() > expiresAt) {
-        toast.error("This consultation code has expired (valid for 2 weeks from generation)");
+        toast.error(t("pd.codeExpired"));
         return;
       }
 
@@ -118,12 +120,12 @@ export default function PatientDashboard() {
         .update({ consultation_code_used: true, status: "confirmed" } as any)
         .eq("id", appointment.id);
 
-      toast.success("Consultation unlocked! You can now chat with your doctor.");
+      toast.success(t("pd.unlocked"));
       setAppointments((prev) =>
         prev.map((a) => a.id === appointment.id ? { ...a, consultation_code_used: true, status: "confirmed" } : a)
       );
     } catch (err: any) {
-      toast.error(err.message || "Verification failed");
+      toast.error(err.message || t("pd.verifyFailed"));
     } finally {
       setVerifyingCode(null);
     }
@@ -144,6 +146,7 @@ export default function PatientDashboard() {
     completed: "bg-muted text-muted-foreground",
     cancelled: "bg-destructive/10 text-destructive",
   };
+  const statusLabel = (s: string) => t(`pd.status.${s}`) || s;
 
   const getPaymentForAppt = (apptId: string) => payments.find((p) => p.appointment_id === apptId);
 
@@ -151,7 +154,7 @@ export default function PatientDashboard() {
     return (
       <div className="container py-8">
         <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
-          ← Back to Dashboard
+          {t("pd.backToDash")}
         </Button>
         <VideoCall
           appointment={selectedVideo}
@@ -166,7 +169,7 @@ export default function PatientDashboard() {
     return (
       <div className="container py-8">
         <Button variant="ghost" className="mb-4" onClick={() => setSelectedChat(null)}>
-          ← Back to Dashboard
+          {t("pd.backToDash")}
         </Button>
         <ConsultationChat appointment={selectedChat} currentUserId={user!.id} />
       </div>
@@ -180,11 +183,12 @@ export default function PatientDashboard() {
         <Alert className="mb-6 border-primary/30 bg-primary/5">
           <Bell className="h-5 w-5 text-primary" />
           <AlertTitle className="font-display font-semibold text-primary">
-            New Consultation Code{appointmentsWithNewCode.length > 1 ? "s" : ""} Available!
+            {appointmentsWithNewCode.length > 1 ? t("pd.newCodeTitlePlural") : t("pd.newCodeTitle")}
           </AlertTitle>
           <AlertDescription className="text-sm text-muted-foreground">
-            You have {appointmentsWithNewCode.length} appointment{appointmentsWithNewCode.length > 1 ? "s" : ""} with a consultation code ready.
-            Enter {appointmentsWithNewCode.length > 1 ? "them" : "it"} below to connect with your doctor.
+            {appointmentsWithNewCode.length > 1
+              ? `${appointmentsWithNewCode.length} ${t("pd.newCodeDescMany")}`
+              : t("pd.newCodeDescOne")}
           </AlertDescription>
         </Alert>
       )}
@@ -192,22 +196,22 @@ export default function PatientDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">
-            Welcome{profile?.first_name ? `, ${profile.first_name}` : ""}!
+            {t("pd.welcome")}{profile?.first_name ? `, ${profile.first_name}` : ""}!
           </h1>
-          <p className="text-muted-foreground text-sm">Here's your health overview</p>
+          <p className="text-muted-foreground text-sm">{t("pd.overview")}</p>
         </div>
         <Button asChild>
-          <Link to="/doctors"><Calendar className="h-4 w-4 mr-2" /> Book Appointment</Link>
+          <Link to="/doctors"><Calendar className="h-4 w-4 mr-2" /> {t("pd.book")}</Link>
         </Button>
       </div>
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { icon: Calendar, label: "Upcoming", value: upcomingAppointments.length, color: "text-primary" },
-          { icon: FileText, label: "Documents", value: documents.length, color: "text-secondary" },
-          { icon: Pill, label: "Prescriptions", value: prescriptions.length, color: "text-accent" },
-          { icon: Clock, label: "Total Visits", value: appointments.length, color: "text-warning" },
+          { icon: Calendar, label: t("pd.stat.upcoming"), value: upcomingAppointments.length, color: "text-primary" },
+          { icon: FileText, label: t("pd.stat.documents"), value: documents.length, color: "text-secondary" },
+          { icon: Pill, label: t("pd.stat.prescriptions"), value: prescriptions.length, color: "text-accent" },
+          { icon: Clock, label: t("pd.stat.totalVisits"), value: appointments.length, color: "text-warning" },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -228,12 +232,12 @@ export default function PatientDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" /> Upcoming Appointments
+              <Calendar className="h-5 w-5 text-primary" /> {t("pd.upcomingTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {upcomingAppointments.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No upcoming appointments</p>
+              <p className="text-muted-foreground text-sm py-4 text-center">{t("pd.noUpcoming")}</p>
             ) : (
               <div className="space-y-3">
                 {upcomingAppointments.map((a) => {
@@ -254,13 +258,13 @@ export default function PatientDashboard() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground">
-                              {a.appointment_date} at {a.appointment_time}
+                              {a.appointment_date} {t("pd.at")} {a.appointment_time}
                             </p>
-                            <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} consultation</p>
+                            <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} {t("pd.consultation")}</p>
                           </div>
                         </div>
                         <Badge className={statusColor[a.status] ?? ""} variant="secondary">
-                          {a.status}
+                          {statusLabel(a.status)}
                         </Badge>
                       </div>
 
@@ -272,7 +276,7 @@ export default function PatientDashboard() {
                             payment.status === "rejected" ? "bg-destructive/10 text-destructive" :
                             "bg-warning/10 text-warning"
                           }>
-                            <DollarSign className="h-3 w-3 mr-1" /> Payment: {payment.status}
+                            <DollarSign className="h-3 w-3 mr-1" /> {t("pd.payment")} {payment.status}
                           </Badge>
                         </div>
                       )}
@@ -281,13 +285,13 @@ export default function PatientDashboard() {
                       {paymentVerified && !consultationUnlocked && a.consultation_code && (
                         <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
                           <p className="text-xs font-medium text-primary flex items-center gap-1">
-                            <Key className="h-3.5 w-3.5" /> Your consultation code is:
+                            <Key className="h-3.5 w-3.5" /> {t("pd.codeIs")}
                           </p>
                           <p className="font-mono text-lg font-bold text-primary tracking-wider">{a.consultation_code}</p>
-                          <p className="text-xs text-muted-foreground">Enter this code below to connect with your doctor</p>
+                          <p className="text-xs text-muted-foreground">{t("pd.enterBelow")}</p>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="Enter consultation code"
+                              placeholder={t("pd.enterCode")}
                               value={consultationCodeInput[a.id] || ""}
                               onChange={(e) => setConsultationCodeInput((prev) => ({ ...prev, [a.id]: e.target.value }))}
                               className="text-sm"
@@ -297,7 +301,7 @@ export default function PatientDashboard() {
                               disabled={verifyingCode === a.id}
                               onClick={() => handleVerifyConsultationCode(a)}
                             >
-                              {verifyingCode === a.id ? "..." : "Verify"}
+                              {verifyingCode === a.id ? "..." : t("pd.verify")}
                             </Button>
                           </div>
                         </div>
@@ -307,7 +311,7 @@ export default function PatientDashboard() {
                       {paymentVerified && !consultationUnlocked && !a.consultation_code && (
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> Processing... please wait
+                            <Clock className="h-3 w-3" /> {t("pd.processing")}
                           </p>
                         </div>
                       )}
@@ -316,7 +320,7 @@ export default function PatientDashboard() {
                       {consultationUnlocked && a.status !== "confirmed" && (
                         <div className="p-3 rounded-lg bg-warning/5 border border-warning/20 space-y-2">
                           <p className="text-xs font-medium text-warning flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" /> Code verified! Waiting for doctor to confirm your appointment...
+                            <Clock className="h-3.5 w-3.5" /> {t("pd.codeVerified")}
                           </p>
                         </div>
                       )}
@@ -325,14 +329,14 @@ export default function PatientDashboard() {
                       {consultationUnlocked && a.status === "confirmed" && (
                         <div className="p-3 rounded-lg bg-success/5 border border-success/20 space-y-2">
                           <p className="text-xs font-medium text-success flex items-center gap-1">
-                            <CheckCircle className="h-3.5 w-3.5" /> Appointment confirmed! Chat & Video are now available
+                            <CheckCircle className="h-3.5 w-3.5" /> {t("pd.confirmedReady")}
                           </p>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
-                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Open Chat
+                              <MessageSquare className="h-3.5 w-3.5 mr-1" /> {t("pd.openChat")}
                             </Button>
                             <Button size="sm" onClick={() => setSelectedVideo(a)}>
-                              <Video className="h-3.5 w-3.5 mr-1" /> Video Call
+                              <Video className="h-3.5 w-3.5 mr-1" /> {t("pd.videoCall")}
                             </Button>
                           </div>
                         </div>
@@ -342,7 +346,7 @@ export default function PatientDashboard() {
                       {!paymentVerified && !consultationUnlocked && payment && payment.status !== "rejected" && (
                         <div className="p-2 rounded-lg bg-muted/50">
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Lock className="h-3 w-3" /> Waiting for admin to verify payment
+                            <Lock className="h-3 w-3" /> {t("pd.waitPayment")}
                           </p>
                         </div>
                       )}
@@ -358,18 +362,18 @@ export default function PatientDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-lg flex items-center gap-2">
-              <Pill className="h-5 w-5 text-accent" /> Recent Prescriptions
+              <Pill className="h-5 w-5 text-accent" /> {t("pd.rxTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {prescriptions.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No prescriptions yet</p>
+              <p className="text-muted-foreground text-sm py-4 text-center">{t("pd.noRx")}</p>
             ) : (
               <div className="space-y-3">
                 {prescriptions.map((rx: any) => (
                   <div key={rx.id} className="p-3 rounded-lg border space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground">{rx.diagnosis || "Prescription"}</p>
+                      <p className="text-sm font-medium text-foreground">{rx.diagnosis || t("pd.rxFallback")}</p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(rx.created_at).toLocaleDateString()}
                       </p>
@@ -391,7 +395,7 @@ export default function PatientDashboard() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
                       >
-                        <FileText className="h-3.5 w-3.5" /> View Prescription Document
+                        <FileText className="h-3.5 w-3.5" /> {t("pd.viewRxDoc")}
                       </a>
                     )}
                   </div>
@@ -405,15 +409,15 @@ export default function PatientDashboard() {
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-secondary" /> Medical Documents
+              <FileText className="h-5 w-5 text-secondary" /> {t("pd.docsTitle")}
             </CardTitle>
             <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-1" /> Upload
+              <Upload className="h-4 w-4 mr-1" /> {t("pd.upload")}
             </Button>
           </CardHeader>
           <CardContent>
             {documents.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">No documents uploaded yet</p>
+              <p className="text-muted-foreground text-sm py-4 text-center">{t("pd.noDocs")}</p>
             ) : (
               <div className="grid sm:grid-cols-2 gap-3">
                 {documents.map((doc) => (
