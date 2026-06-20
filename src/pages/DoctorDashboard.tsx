@@ -29,10 +29,12 @@ import {
 import { toast } from "sonner";
 import ConsultationChat from "@/components/ConsultationChat";
 import VideoCall from "@/components/VideoCall";
+import { useLanguage } from "@/lib/i18n";
 
 type StatsFilter = "pending" | "confirmed" | "completed" | "patients" | null;
 
 export default function DoctorDashboard() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [doctor, setDoctor] = useState<any>(null);
@@ -112,10 +114,10 @@ export default function DoctorDashboard() {
       } as any);
       if (error) throw error;
 
-      toast.success("Prescription sent to patient!");
+      toast.success(t("dd.rxSent"));
       setRxDialogOpen(false);
     } catch (err: any) {
-      toast.error(err.message || "Failed to send prescription");
+      toast.error(err.message || t("dd.rxFailed"));
     } finally {
       setSendingRx(false);
     }
@@ -127,10 +129,8 @@ export default function DoctorDashboard() {
         <div className="h-16 w-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
           <Clock className="h-8 w-8 text-warning" />
         </div>
-        <h1 className="font-display text-2xl font-bold text-foreground">Account Pending Approval</h1>
-        <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-          Your doctor account is being reviewed by our admin team. You'll be notified once approved.
-        </p>
+        <h1 className="font-display text-2xl font-bold text-foreground">{t("dd.pendingApproval")}</h1>
+        <p className="mt-2 text-muted-foreground max-w-md mx-auto">{t("dd.pendingApprovalDesc")}</p>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function DoctorDashboard() {
     return (
       <div className="container py-8">
         <Button variant="ghost" className="mb-4" onClick={() => setSelectedVideo(null)}>
-          ← Back to Dashboard
+          {t("dd.backToDash")}
         </Button>
         <VideoCall
           appointment={selectedVideo}
@@ -154,7 +154,7 @@ export default function DoctorDashboard() {
     return (
       <div className="container py-8">
         <Button variant="ghost" className="mb-4" onClick={() => setSelectedChat(null)}>
-          ← Back to Dashboard
+          {t("dd.backToDash")}
         </Button>
         <ConsultationChat appointment={selectedChat} currentUserId={user!.id} />
       </div>
@@ -162,54 +162,56 @@ export default function DoctorDashboard() {
   }
 
   const statsCards = [
-    { icon: Clock, label: "Pending", value: pending.length, color: "text-warning", filter: "pending" as StatsFilter },
-    { icon: Calendar, label: "Confirmed", value: confirmed.length, color: "text-primary", filter: "confirmed" as StatsFilter },
-    { icon: CheckCircle, label: "Completed", value: completed.length, color: "text-success", filter: "completed" as StatsFilter },
-    { icon: Users, label: "Total Patients", value: uniquePatients.length, color: "text-secondary", filter: "patients" as StatsFilter },
+    { icon: Clock, label: t("dd.stat.pending"), value: pending.length, color: "text-warning", filter: "pending" as StatsFilter },
+    { icon: Calendar, label: t("dd.stat.confirmed"), value: confirmed.length, color: "text-primary", filter: "confirmed" as StatsFilter },
+    { icon: CheckCircle, label: t("dd.stat.completed"), value: completed.length, color: "text-success", filter: "completed" as StatsFilter },
+    { icon: Users, label: t("dd.stat.totalPatients"), value: uniquePatients.length, color: "text-secondary", filter: "patients" as StatsFilter },
   ];
 
   const getFilteredAppointments = () => {
     switch (statsFilter) {
-      case "pending": return { title: "Pending Appointments", items: pending };
-      case "confirmed": return { title: "Confirmed Appointments", items: confirmed };
-      case "completed": return { title: "Completed Appointments", items: completed };
-      case "patients": return { title: "All Patient Appointments", items: appointments };
+      case "pending": return { title: t("dd.list.pending"), items: pending };
+      case "confirmed": return { title: t("dd.list.confirmed"), items: confirmed };
+      case "completed": return { title: t("dd.list.completed"), items: completed };
+      case "patients": return { title: t("dd.list.all"), items: appointments };
       default: return { title: "", items: [] };
     }
   };
+
+  const statusLabel = (s: string) => t(`pd.status.${s}`) || s;
 
   const renderAppointmentActions = (a: any) => (
     <>
       {a.status === "pending" && (
         <div className="flex gap-2">
           <Button size="sm" variant="default" onClick={() => updateStatus(a.id, "confirmed")}>
-            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Confirm
+            <CheckCircle className="h-3.5 w-3.5 mr-1" /> {t("dd.confirm")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => updateStatus(a.id, "cancelled")}>
-            <XCircle className="h-3.5 w-3.5 mr-1" /> Decline
+            <XCircle className="h-3.5 w-3.5 mr-1" /> {t("dd.decline")}
           </Button>
         </div>
       )}
       {a.status === "confirmed" && (
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => setSelectedChat(a)}>
-            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
+            <MessageSquare className="h-3.5 w-3.5 mr-1" /> {t("dd.chat")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setSelectedVideo(a)}>
-            <Video className="h-3.5 w-3.5 mr-1" /> Video
+            <Video className="h-3.5 w-3.5 mr-1" /> {t("dd.video")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => openRxDialog(a)}>
-            <FileUp className="h-3.5 w-3.5 mr-1" /> Prescription
+            <FileUp className="h-3.5 w-3.5 mr-1" /> {t("dd.prescription")}
           </Button>
           <Button size="sm" onClick={() => updateStatus(a.id, "completed")}>
-            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Complete
+            <CheckCircle className="h-3.5 w-3.5 mr-1" /> {t("dd.complete")}
           </Button>
         </div>
       )}
       {a.status === "completed" && (
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => openRxDialog(a)}>
-            <FileUp className="h-3.5 w-3.5 mr-1" /> Send Prescription
+            <FileUp className="h-3.5 w-3.5 mr-1" /> {t("dd.sendRx")}
           </Button>
         </div>
       )}
@@ -229,12 +231,12 @@ export default function DoctorDashboard() {
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">
-              {a.appointment_date} at {a.appointment_time}
+              {a.appointment_date} {t("pd.at")} {a.appointment_time}
             </p>
-            <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} • {a.status}</p>
+            <p className="text-xs text-muted-foreground capitalize">{a.consultation_type} • {statusLabel(a.status)}</p>
           </div>
         </div>
-        <Badge variant="secondary" className="capitalize">{a.status}</Badge>
+        <Badge variant="secondary" className="capitalize">{statusLabel(a.status)}</Badge>
       </div>
       {renderAppointmentActions(a)}
     </div>
@@ -247,24 +249,24 @@ export default function DoctorDashboard() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
-              <Pill className="h-5 w-5 text-primary" /> Send Prescription
+              <Pill className="h-5 w-5 text-primary" /> {t("dd.rxDialogTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label>Diagnosis</Label>
-              <Input value={rxForm.diagnosis} onChange={(e) => setRxForm({ ...rxForm, diagnosis: e.target.value })} placeholder="e.g. Upper respiratory infection" />
+              <Label>{t("dd.diagnosis")}</Label>
+              <Input value={rxForm.diagnosis} onChange={(e) => setRxForm({ ...rxForm, diagnosis: e.target.value })} placeholder={t("dd.diagnosisPh")} />
             </div>
             <div>
-              <Label>Medications (comma-separated)</Label>
-              <Input value={rxForm.medications} onChange={(e) => setRxForm({ ...rxForm, medications: e.target.value })} placeholder="e.g. Amoxicillin 500mg, Ibuprofen 200mg" />
+              <Label>{t("dd.meds")}</Label>
+              <Input value={rxForm.medications} onChange={(e) => setRxForm({ ...rxForm, medications: e.target.value })} placeholder={t("dd.medsPh")} />
             </div>
             <div>
-              <Label>Notes</Label>
-              <Textarea value={rxForm.notes} onChange={(e) => setRxForm({ ...rxForm, notes: e.target.value })} rows={3} placeholder="Additional instructions..." />
+              <Label>{t("dd.notes")}</Label>
+              <Textarea value={rxForm.notes} onChange={(e) => setRxForm({ ...rxForm, notes: e.target.value })} rows={3} placeholder={t("dd.notesPh")} />
             </div>
             <div>
-              <Label>Attach Prescription Document (PDF/Image)</Label>
+              <Label>{t("dd.attach")}</Label>
               <input
                 ref={rxFileRef}
                 type="file"
@@ -274,7 +276,7 @@ export default function DoctorDashboard() {
               />
               <div className="mt-1 flex items-center gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => rxFileRef.current?.click()}>
-                  <FileUp className="h-4 w-4 mr-1" /> {rxFile ? rxFile.name : "Choose file"}
+                  <FileUp className="h-4 w-4 mr-1" /> {rxFile ? rxFile.name : t("dd.chooseFile")}
                 </Button>
                 {rxFile && (
                   <Button type="button" variant="ghost" size="sm" onClick={() => setRxFile(null)}>
@@ -284,7 +286,7 @@ export default function DoctorDashboard() {
               </div>
             </div>
             <Button className="w-full" onClick={handleSendPrescription} disabled={sendingRx}>
-              {sendingRx ? "Sending..." : "Send Prescription"}
+              {sendingRx ? t("dd.sending") : t("dd.sendRx")}
             </Button>
           </div>
         </DialogContent>
@@ -295,7 +297,7 @@ export default function DoctorDashboard() {
           Dr. {profile?.first_name} {profile?.last_name}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {doctor?.specialty || "Doctor"} • Doctor Dashboard
+          {doctor?.specialty || t("dd.doctorFallback")} • {t("dd.subtitle")}
         </p>
       </div>
 
@@ -326,14 +328,14 @@ export default function DoctorDashboard() {
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => setStatsFilter(null)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                <ArrowLeft className="h-4 w-4 mr-1" /> {t("dd.back")}
               </Button>
               <CardTitle className="font-display text-lg">{title} ({items.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {items.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No appointments found</p>
+                  <p className="text-muted-foreground text-center py-8">{t("dd.noAppts")}</p>
                 ) : (
                   items.map(renderAppointmentItem)
                 )}
@@ -349,7 +351,7 @@ export default function DoctorDashboard() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No appointments yet. Appointments will appear here once patients enter their consultation code.</p>
+                <p className="text-muted-foreground">{t("dd.emptyState")}</p>
               </CardContent>
             </Card>
           )}
@@ -359,7 +361,7 @@ export default function DoctorDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="font-display text-lg flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-warning" /> Pending Appointments
+                    <Clock className="h-5 w-5 text-warning" /> {t("dd.list.pending")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -374,7 +376,7 @@ export default function DoctorDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="font-display text-lg flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-primary" /> Confirmed Appointments
+                    <Calendar className="h-5 w-5 text-primary" /> {t("dd.list.confirmed")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
