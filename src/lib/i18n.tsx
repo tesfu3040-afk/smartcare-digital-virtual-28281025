@@ -182,6 +182,11 @@ const translations: Record<Language, Dict> = {
     "book.uploadRequired": "Please upload your payment screenshot before booking",
     "book.success": "Appointment booked with payment! Admin will verify and send your consultation code.",
     "book.failed": "Booking failed",
+    "book.step1": "Step 1: Appointment Details",
+    "book.step2": "Step 2: Payment",
+    "book.next": "Next",
+    "book.previous": "Back",
+    "book.fillRequired": "Please fill in date and time",
 
     // Auth page
     "auth.welcome": "Welcome to SmartCare",
@@ -543,6 +548,11 @@ const translations: Record<Language, Dict> = {
     "book.uploadRequired": "ቀጠሮ ከመያዝዎ በፊት እባክዎ የክፍያ ስክሪንሾትዎን ይስቀሉ",
     "book.success": "ቀጠሮ ከክፍያ ጋር ተይዟል! አስተዳዳሪ ያረጋግጥና የምክክር ኮድዎን ይልክልዎታል።",
     "book.failed": "ቀጠሮ መያዝ አልተሳካም",
+    "book.step1": "ደረጃ 1፡ የቀጠሮ ዝርዝሮች",
+    "book.step2": "ደረጃ 2፡ ክፍያ",
+    "book.next": "ቀጣይ",
+    "book.previous": "ተመለስ",
+    "book.fillRequired": "እባክዎ ቀንና ሰዓት ይሙሉ",
 
     // Auth page
     "auth.welcome": "ወደ SmartCare እንኳን በደህና መጡ",
