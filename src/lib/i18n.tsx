@@ -162,6 +162,8 @@ const translations: Record<Language, Dict> = {
     "book.paymentInfo": "Payment Information",
     "book.bank": "Bank:",
     "book.account": "Account:",
+    "book.amount": "Amount:",
+    "book.etb": "ETB",
     "book.transferNote": "Transfer the consultation fee and upload the screenshot below before booking.",
     "book.date": "Date",
     "book.time": "Time",
@@ -521,6 +523,8 @@ const translations: Record<Language, Dict> = {
     "book.paymentInfo": "የክፍያ መረጃ",
     "book.bank": "ባንክ፡",
     "book.account": "ሂሳብ፡",
+    "book.amount": "መጠን፡",
+    "book.etb": "ብር",
     "book.transferNote": "የምክክር ክፍያውን ያስተላልፉ እና ቀጠሮ ከመያዝዎ በፊት ስክሪንሾቱን ከታች ይስቀሉ።",
     "book.date": "ቀን",
     "book.time": "ሰዓት",
@@ -736,9 +740,10 @@ const LanguageContext = createContext<Ctx | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
-    if (typeof window === "undefined") return "en";
+    if (typeof window === "undefined") return "am";
     const saved = localStorage.getItem("smartcare-lang");
-    return saved === "am" ? "am" : "en";
+    if (saved === "am" || saved === "en") return saved;
+    return "am";
   });
 
   useEffect(() => {
