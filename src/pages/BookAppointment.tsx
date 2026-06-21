@@ -31,6 +31,7 @@ export default function BookAppointment() {
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<1 | 2>(1);
 
   useEffect(() => {
     if (!doctorId) return;
@@ -130,6 +131,14 @@ export default function BookAppointment() {
 
   const hasBankInfo = settings.bank_account_number && settings.bank_name;
 
+  const goNext = () => {
+    if (!date || !time) {
+      toast.error(t("book.fillRequired"));
+      return;
+    }
+    setStep(2);
+  };
+
   return (
     <div>
       <section className="relative py-16 overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(211, 80%, 35%) 0%, hsl(211, 80%, 42%) 50%, hsl(199, 89%, 40%) 100%)' }}>
@@ -147,6 +156,13 @@ export default function BookAppointment() {
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-xl">{t("book.title")}</CardTitle>
+          <div className="flex items-center gap-2 mt-3">
+            <div className={`flex-1 h-1.5 rounded-full ${step >= 1 ? "bg-primary" : "bg-muted"}`} />
+            <div className={`flex-1 h-1.5 rounded-full ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            {step === 1 ? t("book.step1") : t("book.step2")}
+          </p>
         </CardHeader>
         <CardContent>
           {/* Doctor info */}
@@ -167,8 +183,8 @@ export default function BookAppointment() {
             </div>
           </div>
 
-          {/* Bank / Payment Info */}
-          {hasBankInfo && (
+          {/* Bank / Payment Info (step 2 only) */}
+          {step === 2 && hasBankInfo && (
             <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 mb-6 space-y-2">
               <div className="flex items-center gap-2 text-primary font-display font-semibold text-sm">
                 <Landmark className="h-4 w-4" /> {t("book.paymentInfo")}
@@ -196,39 +212,48 @@ export default function BookAppointment() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <Label>{t("book.date")}</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={minDate} required />
-              </div>
-              <div>
-                <Label>{t("book.time")}</Label>
-                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={doctor.available_start_time} max={doctor.available_end_time} required />
-              </div>
-            </div>
-            <div>
-              <Label>{t("book.consultationType")}</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="video">
-                    <div className="flex items-center gap-2"><Video className="h-4 w-4" /> {t("book.videoCall")}</div>
-                  </SelectItem>
-                  <SelectItem value="chat">
-                    <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> {t("book.chat")}</div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>{t("book.notes")}</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("book.notesPlaceholder")} maxLength={500} rows={3} />
-            </div>
+            {step === 1 && (
+              <>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t("book.date")}</Label>
+                    <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} min={minDate} required />
+                  </div>
+                  <div>
+                    <Label>{t("book.time")}</Label>
+                    <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={doctor.available_start_time} max={doctor.available_end_time} required />
+                  </div>
+                </div>
+                <div>
+                  <Label>{t("book.consultationType")}</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="video">
+                        <div className="flex items-center gap-2"><Video className="h-4 w-4" /> {t("book.videoCall")}</div>
+                      </SelectItem>
+                      <SelectItem value="chat">
+                        <div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> {t("book.chat")}</div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("book.notes")}</Label>
+                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("book.notesPlaceholder")} maxLength={500} rows={3} />
+                </div>
+                <Button type="button" className="w-full" onClick={goNext}>
+                  {t("book.next")}
+                </Button>
+              </>
+            )}
 
-            {/* Payment Screenshot Upload */}
-            <div className="space-y-2">
+            {step === 2 && (
+              <>
+                {/* Payment Screenshot Upload */}
+                <div className="space-y-2">
               <Label className="flex items-center gap-1">
                 <Image className="h-4 w-4" /> {t("book.screenshot")}
               </Label>
@@ -261,11 +286,18 @@ export default function BookAppointment() {
                   </div>
                 </Button>
               )}
-            </div>
+                </div>
 
-            <Button type="submit" className="w-full" disabled={loading || !screenshotFile}>
-              {loading ? t("book.booking") : t("book.confirm")}
-            </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(1)} disabled={loading}>
+                    <ArrowLeft className="h-4 w-4 mr-1" /> {t("book.previous")}
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={loading || !screenshotFile}>
+                    {loading ? t("book.booking") : t("book.confirm")}
+                  </Button>
+                </div>
+              </>
+            )}
           </form>
         </CardContent>
       </Card>
