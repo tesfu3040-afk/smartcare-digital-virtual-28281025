@@ -179,6 +179,14 @@ export default function BookAppointment() {
               <div className="text-sm text-foreground space-y-1">
                 <p><span className="font-medium">{t("book.bank")}</span> {settings.bank_name}</p>
                 <p><span className="font-medium">{t("book.account")}</span> {settings.bank_account_number}</p>
+                {settings.consultation_fee_etb && (
+                  <p className="text-base">
+                    <span className="font-medium">{t("book.amount")}</span>{" "}
+                    <span className="font-display font-bold text-primary">
+                      {settings.consultation_fee_etb} {t("book.etb")}
+                    </span>
+                  </p>
+                )}
               </div>
               <div className="flex items-start gap-1.5 text-xs text-muted-foreground mt-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />

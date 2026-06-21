@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 
   // Settings form
   const [settingsForm, setSettingsForm] = useState({
-    bank_account_number: "", bank_name: "", payment_instructions: "",
+    bank_account_number: "", bank_name: "", payment_instructions: "", consultation_fee_etb: "",
     emergency_phone: "", contact_phone: "", contact_email: "",
   });
 
@@ -101,6 +101,7 @@ export default function AdminDashboard() {
       bank_account_number: settings.bank_account_number || "",
       bank_name: settings.bank_name || "",
       payment_instructions: settings.payment_instructions || "",
+      consultation_fee_etb: settings.consultation_fee_etb || "",
       emergency_phone: settings.emergency_phone || "",
       contact_phone: settings.contact_phone || "",
       contact_email: settings.contact_email || "",
@@ -889,6 +890,19 @@ export default function AdminDashboard() {
                   <div>
                     <Label>Payment Instructions</Label>
                     <Textarea value={settingsForm.payment_instructions} onChange={(e) => setSettingsForm({ ...settingsForm, payment_instructions: e.target.value })} rows={3} />
+                  </div>
+                  <div>
+                    <Label>Consultation Fee (ETB)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={settingsForm.consultation_fee_etb}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, consultation_fee_etb: e.target.value })}
+                      placeholder="e.g. 500"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Shown to patients on the booking payment page (in ETB / ብር).
+                    </p>
                   </div>
                 </CardContent>
               </Card>
